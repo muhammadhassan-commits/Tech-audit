@@ -33,6 +33,22 @@ export function ev({ kind = 'computed', source_url = null, fetch_profile = 'NONE
   });
 }
 
+/**
+ * Combine evidence lists without repeating an entry. A finding's own evidence is also added to the
+ * check's general evidence, so the item that triggered the finding otherwise appeared twice.
+ */
+function mergeEvidence(...lists) {
+  const seen = new Set();
+  const out = [];
+  for (const e of lists.flat().filter(Boolean)) {
+    const key = `${e.kind}|${e.source_url}|${e.selector_or_key}|${e.observed_value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
+}
+
 export class ResultBuilder {
   /**
    * @param ctx      run context (register, caveats, etc.)
@@ -61,7 +77,7 @@ export class ResultBuilder {
   }
 
   /** A matched condition row. `id` is a checkpoint id (C-1.5-g) from the PRD tables. */
-  hit(id, { summary, evidence = [], status, severity, caveat, cross_references = [], reason_code, remediation } = {}) {
+  hit(id, { summary, evidence = [], status, severity, caveat, cross_references = [], reason_code, remediation, sourceRefs = [] } = {}) {
     const def = CHECKPOINTS[id];
     if (!def) throw new Error(`Unknown checkpoint ${id}`);
     const h = {
@@ -75,6 +91,7 @@ export class ResultBuilder {
       caveat: caveat || null,
       cross_references,
       remediation: remediation || null,
+      sourceRefs,
     };
     cross_references.forEach((c) => this.cross.add(c));
     this.hits.push(h);
@@ -132,7 +149,7 @@ export class ResultBuilder {
   /** Resolve sources for a hit and apply tier discipline (R-SRC-3). */
   _sourcesFor(h) {
     const reg = this.ctx.register;
-    const res = reg.resolve(this.checkId, { checkpoint: h.checkpoint, reasonCode: h.reason_code });
+    const res = reg.resolve(this.checkId, { checkpoint: h.checkpoint, reasonCode: h.reason_code, extraRefs: h.sourceRefs || [] });
     const sources = res.sources.map((s) => ({ ...s }));
     this._lastResolve = res;
     let status = h.status;
@@ -211,7 +228,7 @@ export class ResultBuilder {
         condition: src.condition,
         source_specificity: src.specificity,
         also_registered: src.also_registered,
-        evidence: this.evidence,
+        evidence: mergeEvidence(this.evidence),
         sub_findings: hits,
       };
     } else {
@@ -238,12 +255,12 @@ export class ResultBuilder {
           condition: top.condition,
           source_specificity: top.source_specificity,
           also_registered: top.also_registered,
-          evidence: [...top.evidence, ...this.evidence],
+          evidence: mergeEvidence(top.evidence, this.evidence),
           remediation: top.remediation || this.remediation,
           sub_findings: hits,
         };
       } else if (ntHit && !statusBearing.length) {
-        out = { ...base, status: ntHit.status, severity: null, reason_code: ntHit.reason_code, summary: ntHit.summary, sources: ntHit.sources, reference_url: ntHit.reference_url, evidence: [...ntHit.evidence, ...this.evidence], sub_findings: hits };
+        out = { ...base, status: ntHit.status, severity: null, reason_code: ntHit.reason_code, summary: ntHit.summary, sources: ntHit.sources, reference_url: ntHit.reference_url, evidence: mergeEvidence(ntHit.evidence, this.evidence), sub_findings: hits };
       } else {
         const passCp = `${this.checkId}-a`;
         const passHit = statusBearing.find((h) => h.status === 'PASS');
@@ -259,7 +276,7 @@ export class ResultBuilder {
           condition: src.condition,
           source_specificity: src.source_specificity,
           also_registered: src.also_registered,
-          evidence: [...(passHit?.evidence || []), ...this.evidence],
+          evidence: mergeEvidence(passHit?.evidence || [], this.evidence),
           sub_findings: hits,
         };
       }

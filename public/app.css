@@ -84,6 +84,7 @@ main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
 .verdict.HEALTHY { background: color-mix(in srgb, var(--pass) 18%, transparent); color: var(--pass); }
 .verdict.NEEDS_WORK { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 .verdict.BLOCKED { background: color-mix(in srgb, var(--fail) 18%, transparent); color: var(--fail); }
+.verdict.CRITICAL_ISSUES { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); }
 .verdict.INSUFFICIENT_EVIDENCE { background: color-mix(in srgb, var(--na) 22%, transparent); color: var(--muted); }
 .score-note { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; text-align: left; }
 .run-meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 14px 0 0; font-size: 12.5px; text-align: left; }

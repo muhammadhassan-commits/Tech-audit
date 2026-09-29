@@ -51,7 +51,14 @@ export async function run(ctx) {
     }
     const hp = variants.find((v) => v.final_url && v.status >= 200 && v.status < 300);
     if (hp) b.addEvidence(ev({ kind: 'http_status', source_url: hp.url, fetch_profile: 'RAW', selector_or_key: 'origin probe', observed_value: `${hp.status} ${hp.final_url}` }));
-    if (!b.hits.length) b.pass('Missing URLs return an error status, TLS is valid on the canonical origin, and http:// does not serve content without upgrading.');
+    if (!b.hits.length) {
+      b.pass('Missing URLs return an error status, TLS is valid on the canonical origin, and http:// does not serve content without upgrading.');
+      // Say what each clause actually means. A reader should not have to know what a soft 404 is to
+      // understand what passed, or why it would matter if it had not.
+      b.note(null, `A URL that does not exist returns ${probe?.rec?.status ?? 'an error status'}, not 200. Had it returned 200 with a "page not found" design — a soft 404 — Google would spend crawl budget on pages that do not exist and may index them.`);
+      b.note(null, 'The HTTPS certificate on the canonical origin is valid, unexpired, and matches the hostname. An invalid certificate warns visitors away and blocks crawling entirely.');
+      b.note(null, 'Requesting the http:// address redirects to https:// rather than serving the page. Serving both would put the same content on two protocols, splitting ranking signals between them and leaving the insecure copy live.');
+    }
     out.push(b.build());
   } catch (e) {
     out.push(errorResult(ctx, 'C-1.3', e));

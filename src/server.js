@@ -85,6 +85,7 @@ export function createServer() {
         if (body.no_render) config.cap = { ...(config.cap || {}), render_js: false };
         if (body.no_llm) config.cap = { ...(config.cap || {}), llm_judge: false };
         if (body.ua_probe) config.cap = { ...(config.cap || {}), ua_probe: true };
+        if (body.operator_urls_only) config.operator_urls_only = true;
         runAudit(seed, { config, operator_urls: body.operator_urls || [] }, (e) => {
           state.events.push(e);
           for (const l of state.listeners) l(e);

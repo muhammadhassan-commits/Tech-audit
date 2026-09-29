@@ -227,16 +227,26 @@ function fakeReport(results, runOverrides = {}) {
 }
 const R = (check_id, section, status, severity, extra = {}) => ({ check_id, section, report_section: section, status, severity, check_name: check_id, confidence: 'OBSERVED', reason_code: status === 'PASS' ? null : 'X', ...extra });
 
-test('scoring: a CRITICAL FAIL caps the overall score at 40 and forces BLOCKED (R-SCORE-5)', () => {
+test('scoring: a CRITICAL FAIL caps the overall score at 40 (R-SCORE-5)', () => {
   const cfg = loadConfig();
-  const s = computeScores(fakeReport([
-    R('C-1.1', '1', 'FAIL', 'CRITICAL'),
-    R('C-2.1', '2', 'PASS'), R('C-2.2', '2', 'PASS'), R('C-3.1', '3', 'PASS'),
-    R('C-4.1', '4', 'PASS'), R('C-5.1', '5', 'PASS'), R('C-6.1', '6', 'PASS'),
+  const rest = [R('C-2.1', '2', 'PASS'), R('C-2.2', '2', 'PASS'), R('C-3.1', '3', 'PASS'),
+    R('C-4.1', '4', 'PASS'), R('C-5.1', '5', 'PASS'), R('C-6.1', '6', 'PASS')];
+
+  // A critical failure that genuinely stops crawling reads as BLOCKED.
+  const blocked = computeScores(fakeReport([
+    R('C-1.1', '1', 'FAIL', 'CRITICAL', { reason_code: 'ROBOTS_BLOCKS_GOOGLEBOT_SITEWIDE' }), ...rest,
   ]), cfg);
-  assert.equal(s.verdict, 'BLOCKED');
-  assert.ok(s.overall <= 0.4);
-  assert.deepEqual(s.gated_by, ['C-1.1: X']);
+  assert.equal(blocked.verdict, 'BLOCKED');
+  assert.ok(blocked.overall <= 0.4);
+
+  // A critical failure found during a successful crawl must not claim the site was unreachable.
+  const critical = computeScores(fakeReport([
+    R('C-6.1', '6', 'FAIL', 'CRITICAL', { reason_code: 'RAW_CONTENT_ABSENT' }),
+    R('C-1.1', '1', 'PASS'), ...rest.slice(0, 5),
+  ]), cfg);
+  assert.equal(critical.verdict, 'CRITICAL_ISSUES');
+  assert.ok(critical.overall <= 0.4);
+  assert.deepEqual(critical.gated_by, ['C-6.1: RAW_CONTENT_ABSENT']);
 });
 
 test('scoring: not-testable checks are excluded from numerator and denominator', () => {

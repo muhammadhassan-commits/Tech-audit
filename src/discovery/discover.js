@@ -20,6 +20,37 @@ function abort(code) {
   return Object.assign(new Error(code), { code, __abort: true });
 }
 
+/**
+ * Fetch, classify and return operator-supplied URLs (E-A4-9): honoured verbatim, bypassing scoring.
+ * Off-origin entries are recorded and skipped — the audit never leaves canonical_origin (F-A1-3).
+ */
+async function loadOperatorPages(ctx, disc, sigOf = () => null, saturatedParents = new Set()) {
+  const { http, cfg } = ctx;
+  const pages = [];
+  for (const raw of cfg.operator_urls || []) {
+    const u = normalizeUrl(String(raw).trim(), ctx.canonicalOrigin);
+    if (!u) continue;
+    if (!isSameSite(u, ctx.canonicalOrigin)) {
+      disc.content_on_external_host.push(hostOf(u));
+      continue;
+    }
+    if (pages.some((p) => p.url === u)) continue;
+    const rec = await http.fetch(u, { budgetClass: 'primary', exempt: true });
+    const f = extractFacts(bodyText(rec), rec.final_url, ctx.canonicalOrigin);
+    pages.push({
+      url: u,
+      depth: depth(u),
+      discovery_method: 'OPERATOR_SUPPLIED',
+      status: rec.status,
+      facts: f,
+      robots_googlebot: ctx.robotsAllowed('googlebot', u).verdict,
+      classification: classify({ url: u, path: new URL(u).pathname, facts: f, signature: sigOf(u) }, { signatureOf: sigOf, saturatedParents }),
+    });
+  }
+  if (pages.length) disc.discovery_methods_used.add('OPERATOR_SUPPLIED');
+  return pages;
+}
+
 export async function runDiscovery(ctx) {
   const { http, renderer, cfg } = ctx;
   const flags = ctx.flags;
@@ -66,6 +97,39 @@ export async function runDiscovery(ctx) {
 
   // E-A0-5 consent wall / E-A0-6 placeholder
   if (/consent|cookie/i.test(rawFacts.mainText.slice(0, 400)) && rawFacts.mainText.split(/\s+/).length < 80 && renFacts && renFacts.mainText.length > rawFacts.mainText.length * 3) flags.add('CONSENT_WALL_RAW');
+
+  // ── Operator-only mode: audit exactly the URLs supplied, skipping discovery ──
+  // When the operator names the pages, sampling has nothing to decide. Discovery is skipped, and
+  // the homepage is included only if it was named.
+  if (cfg.operator_urls_only && cfg.operator_urls?.length) {
+    const pages = await loadOperatorPages(ctx, disc);
+    if (!pages.length) throw abort('NO_SELECTABLE_PAGES');
+    ctx.target.site_shape = 'multi_page';
+    ctx.target.is_multilingual = false;
+    disc.discovery_methods_used = [...disc.discovery_methods_used];
+    disc.groups = [];
+    disc.fetch_count = http.fetchCount;
+    flags.add('OPERATOR_URLS_ONLY');
+    const capped = pages.slice(0, 10);
+    if (pages.length > 10) disc.caps_hit.push('OPERATOR_URLS_CAPPED');
+    ctx.sample = {
+      quality: sampleQuality(capped),
+      pages: capped.map((p) => ({
+        url: p.url,
+        page_type: Object.keys(p.classification?.qualifies || {})[0]?.replace(/^service$/, 'service_main') || 'other',
+        alt_types: Object.keys(p.classification?.qualifies || {}),
+        pattern_signature: new URL(p.url).pathname,
+        group_member_count: 1,
+        discovery_method: 'OPERATOR_SUPPLIED',
+        selection_reason: 'supplied by the operator; discovery skipped (E-A4-9)',
+        score_breakdown: {},
+        flags: [],
+      })),
+      page_type_absent: [],
+    };
+    ctx.emit('sample', { quality: ctx.sample.quality, pages: ctx.sample.pages.map((p) => ({ url: p.url, page_type: p.page_type })) });
+    return;
+  }
 
   // ── A.1 link harvesting ───────────────────────────────────────────────
   const harvest = (facts) => facts.links.filter((l) => !l.discard);
@@ -126,8 +190,10 @@ export async function runDiscovery(ctx) {
   };
 
   if (siteShape === 'single_page') {
-    // R-A1-6 — page set is exactly [homepage]; discovery ends here.
-    return finishSingle(ctx, disc, { hpRaw, hpRen, rawFacts, renFacts });
+    // R-A1-6 — page set is exactly [homepage]; discovery ends here. Operator-supplied URLs are
+    // still honoured: they were named explicitly and must not be dropped by the shape detection.
+    const extra = await loadOperatorPages(ctx, disc);
+    return finishSingle(ctx, disc, { hpRaw, hpRen, rawFacts, renFacts, extra });
   }
 
   // ── Backup ladder when < 3 same-origin URLs (B-A1-1…B-A1-5) ─────────────────
@@ -302,26 +368,7 @@ export async function runDiscovery(ctx) {
   homepageCand.group = groups.find((g) => g.signature === '/') || { signature: '/', true_member_count: 1 };
 
   // Operator-supplied URLs (E-A4-9)
-  const operatorPages = [];
-  for (const raw of cfg.operator_urls || []) {
-    const u = normalizeUrl(raw, ctx.canonicalOrigin);
-    if (!u) continue;
-    if (!isSameSite(u, ctx.canonicalOrigin)) {
-      disc.content_on_external_host.push(hostOf(u)); // F-A1-3
-      continue;
-    }
-    const rec = await http.fetch(u, { budgetClass: 'primary', exempt: true });
-    const f = extractFacts(bodyText(rec), rec.final_url, ctx.canonicalOrigin);
-    operatorPages.push({
-      url: u,
-      depth: depth(u),
-      discovery_method: 'OPERATOR_SUPPLIED',
-      status: rec.status,
-      facts: f,
-      robots_googlebot: ctx.robotsAllowed('googlebot', u).verdict,
-      classification: classify({ url: u, path: new URL(u).pathname, facts: f, signature: sigOf2(u) }, { signatureOf: sigOf2, saturatedParents }),
-    });
-  }
+  const operatorPages = await loadOperatorPages(ctx, disc, sigOf2, saturatedParents);
 
   const sel = selectPages({ homepage: homepageCand, groups: groups.filter((g) => g.signature !== '/'), operatorPages, cap: 10 });
   if (sel.selected.length === 0) throw abort('NO_SELECTABLE_PAGES'); // C-A4-e
@@ -362,19 +409,24 @@ export async function runDiscovery(ctx) {
   ctx.emit('sample', { quality: ctx.sample.quality, pages: sel.selected.map((p) => ({ url: p.url, page_type: p.page_type })) });
 }
 
-function finishSingle(ctx, disc, { hpRaw }) {
+function finishSingle(ctx, disc, { hpRaw, extra = [] }) {
   disc.discovery_methods_used = [...disc.discovery_methods_used];
   disc.groups = [{ signature: '/', member_count: 1, true_member_count: 1, saturated: false, example_url: ctx.homepageUrl, depth: 0, discovery_methods: ['seed'] }];
   disc.fetch_count = ctx.http.fetchCount;
   ctx.flags.add('SINGLE_PAGE_SITE');
   ctx.target.is_multilingual = false;
   const url = normalizeUrl(hpRaw.final_url || ctx.homepageUrl);
+  const pages = [{ url, page_type: 'homepage', alt_types: [], pattern_signature: '/', group_member_count: 1, discovery_method: 'seed', selection_reason: 'single-page site (R-A1-6)', score_breakdown: {}, flags: [] }];
+  for (const p of extra.slice(0, 9)) {
+    if (p.url === url) continue;
+    pages.push({ url: p.url, page_type: 'other', alt_types: [], pattern_signature: new URL(p.url).pathname, group_member_count: 1, discovery_method: 'OPERATOR_SUPPLIED', selection_reason: 'supplied by the operator (E-A4-9)', score_breakdown: {}, flags: [] });
+  }
   ctx.sample = {
-    quality: 'SINGLE',
-    pages: [{ url, page_type: 'homepage', alt_types: [], pattern_signature: '/', group_member_count: 1, discovery_method: 'seed', selection_reason: 'single-page site (R-A1-6)', score_breakdown: {}, flags: [] }],
+    quality: sampleQuality(pages),
+    pages,
     page_type_absent: SLATE.filter((t) => t !== 'homepage').map((t) => ({ page_type: t, reason: 'NO_QUALIFYING_CANDIDATE' })),
   };
-  ctx.emit('sample', { quality: 'SINGLE', pages: [{ url, page_type: 'homepage' }] });
+  ctx.emit('sample', { quality: ctx.sample.quality, pages: pages.map((p) => ({ url: p.url, page_type: p.page_type })) });
 }
 
 function depth(url) {

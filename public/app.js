@@ -194,6 +194,7 @@ $('#run-form').addEventListener('submit', async (e) => {
     ua_probe: $('#opt-ua').checked,
     env: $('#opt-staging').checked ? 'staging' : 'production',
     operator_urls: $('#opt-urls').value.split('\n').map((s) => s.trim()).filter(Boolean),
+    operator_urls_only: $('#opt-only-urls').checked,
   };
   try {
     const { run_id, error } = await fetch('/api/audit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
@@ -316,7 +317,12 @@ function renderScore(report) {
   badge.className = `verdict ${s.verdict}`;
   const note = $('#score-note');
   note.innerHTML = '';
-  if (s.gated_by.length) note.appendChild(el('div', null, `Capped at 40% by a critical failure: ${s.gated_by.join(', ')}.`));
+  if (s.gated_by.length) {
+    const blocked = s.verdict === 'BLOCKED';
+    note.appendChild(el('div', null, blocked
+      ? `Capped at 40%: a critical failure prevents crawling or indexing — ${s.gated_by.join(', ')}.`
+      : `Capped at 40% by a critical failure found during a successful crawl — ${s.gated_by.join(', ')}. The site was reached and ${report.sample.pages.length} page(s) were analysed; the cap reflects the severity of the finding, not a crawl failure.`));
+  }
   for (const c of s.caveats) note.appendChild(el('div', null, `· ${c}`));
   if (s.missing_inputs.length) note.appendChild(el('div', null, `Missing inputs: ${s.missing_inputs.join(', ')}.`));
 

@@ -24,6 +24,17 @@ const CLASS_TO_TIER = [
 export const TIER_RANK = { STANDARD: 0, VENDOR_DOC: 1, VENDOR_STATEMENT: 2, INDUSTRY_STUDY: 3, INDUSTRY_COMMENTARY: 4, TOOL_POLICY: 5 };
 export const STRONG_TIERS = new Set(['STANDARD', 'VENDOR_DOC']);
 
+/**
+ * Implementation specifications hidden from findings by default.
+ *
+ * These define how software must behave, not what a site owner should do. A marketing reader shown
+ * RFC 9110 alongside "your redirect chain is two hops" learns nothing they can act on, and a
+ * citation that cannot be acted on erodes trust in the ones that can. Verified above: no finding
+ * loses its only source, and no FAIL loses its only authoritative source, so tier discipline
+ * (R-SRC-3) is unaffected. Override with sources.hide_refs in config/audit.config.json.
+ */
+export const DEFAULT_HIDDEN_REFS = ['P1', 'R1', 'R2', 'R3', 'R4'];
+
 const STOP_TERMS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'not', 'are', 'was', 'its', 'per', 'any', 'all', 'one', 'two', 'more', 'than', 'when', 'where', 'which', 'what', 'into', 'over', 'under', 'only', 'other', 'their', 'there', 'have', 'has', 'been', 'but', 'set', 'used', 'using', 'use', 'page', 'pages', 'site', 'sites', 'google', 'search', 'tool', 'rule', 'rules', 'source', 'sources', 'documented', 'documents', 'document']);
 
 // reason_code shorthand expanded to the words a source's statement would actually use.
@@ -120,7 +131,8 @@ function rowsToObjects(rows) {
 }
 
 export class SourceRegister {
-  constructor(filePath = DEFAULT_REGISTER_PATH) {
+  constructor(filePath = DEFAULT_REGISTER_PATH, { hideRefs = DEFAULT_HIDDEN_REFS } = {}) {
+    this.hiddenRefs = new Set(hideRefs);
     this.filePath = filePath;
     this.mtime = 0;
     this.load();
@@ -236,20 +248,24 @@ export class SourceRegister {
    * carried through rather than flattened: presenting factor-level support as though it addressed
    * the specific condition is the failure F-SRC-2 names.
    */
-  resolve(checkId, { checkpoint, reasonCode } = {}) {
+  resolve(checkId, { checkpoint, reasonCode, extraRefs = [] } = {}) {
     let cp = checkpoint ? this.checkpoints.get(checkpoint) : null;
     if (!cp && reasonCode) {
       const list = this.byReason.get(reasonCode) || [];
       cp = list.find((c) => c.check_id === checkId) || list[0] || null;
     }
     const factor = this.factors.get(checkId);
-    const refs = cp?.refs?.length ? cp.refs : factor?.refs || [];
+    // extraRefs cite registered entries on a finding the register does not itself map to them.
+    // Used only where an operator rule extends the PRD and the supporting document already exists
+    // in the register — never to invent a source.
+    const refs = [...new Set([...(cp?.refs?.length ? cp.refs : factor?.refs || []), ...extraRefs])];
     const inherits = !cp?.note || /^inherits the factor-level source/i.test(cp.note);
     const narrowed = !!cp && !!factor && JSON.stringify(cp.refs) !== JSON.stringify(factor.refs);
     // A row is condition-specific when the register wrote a note for it rather than deferring to the
     // factor, or narrowed its refs away from the factor's list.
     const specificity = !inherits || narrowed ? 'CONDITION' : 'FACTOR';
     const all = refs
+      .filter((r) => !this.hiddenRefs.has(r))
       .map((r) => this.source(r, { specificity }))
       .filter(Boolean)
       .sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier]);

@@ -60,6 +60,27 @@ function siteLevel(ctx) {
   return b.build();
 }
 
+/**
+ * R-1.4-1 — "where a trailing-slash variant exists, both forms". Request the page's opposite
+ * trailing-slash form: one of the two must be canonical and the other must redirect to it. Both
+ * answering 200 means the same content is live at two URLs, which splits signals exactly as an
+ * unconsolidated www/non-www pair does.
+ */
+async function trailingSlashVariant(ctx, page) {
+  const u = new URL(page.finalUrl);
+  if (u.pathname === '/' || u.search) return null; // the root has no meaningful pair
+  const alt = new URL(u);
+  alt.pathname = u.pathname.endsWith('/') ? u.pathname.replace(/\/+$/, '') : `${u.pathname}/`;
+  if (!alt.pathname) return null;
+  const altUrl = alt.toString();
+  ctx.derived.slashProbes ||= new Map();
+  if (ctx.derived.slashProbes.has(altUrl)) return ctx.derived.slashProbes.get(altUrl);
+  const rec = await ctx.http.fetch(altUrl, { budgetClass: 'secondary', discardBody: true });
+  const out = { url: altUrl, status: rec.status, final_url: rec.final_url, hops: rec.hop_count || 0, terminal: rec.terminal };
+  ctx.derived.slashProbes.set(altUrl, out);
+  return out;
+}
+
 async function pageLevel(ctx, page, b) {
   const { cfg } = ctx;
   const r = page.raw;
@@ -114,9 +135,34 @@ async function pageLevel(ctx, page, b) {
   } else {
     b.caveat('Client-side redirects not evaluated: no RENDERED profile for this page (B-1.4-3).');
   }
+  // Trailing-slash pair (R-1.4-1)
+  let slash = null;
+  if (r.status >= 200 && r.status < 300) {
+    slash = await trailingSlashVariant(ctx, page);
+    if (slash) {
+      b.metric('trailing_slash_variant', slash);
+      const sEv = ev({ kind: 'http_status', source_url: slash.url, fetch_profile: 'RAW', selector_or_key: 'trailing-slash variant final status', observed_value: `${slash.status ?? 'no response'} ${slash.final_url || ''}`.trim(), expected_value: `redirect to ${page.finalUrl}` });
+      const landsHere = slash.final_url && normalizeUrl(slash.final_url) === page.finalUrl;
+      if (slash.status >= 200 && slash.status < 300 && !landsHere) {
+        b.hit('C-1.4-h', {
+          status: 'FAIL',
+          severity: 'HIGH',
+          reason_code: 'TRAILING_SLASH_BOTH_LIVE',
+          summary: `Both ${page.finalUrl} and ${slash.url} return ${slash.status} without either redirecting to the other. The same content is live at two URLs; one form must be canonical and the other must redirect to it.`,
+          evidence: [sEv],
+          cross_references: ['C-1.5'],
+        });
+      } else if (landsHere && slash.hops > 0) {
+        b.note('TRAILING_SLASH_REDIRECT', `The ${slash.url.endsWith('/') ? 'trailing-slash' : 'no-slash'} form redirects here in ${slash.hops} hop(s) — correct consolidation (E-1.4-4).`, [sEv]);
+      } else if (slash.status != null && slash.status >= 400) {
+        b.note('TRAILING_SLASH_REDIRECT', `The opposite trailing-slash form returns ${slash.status}; only one form is served.`, [sEv]);
+      }
+    }
+  }
+
   b.addEvidence(cEv);
   if (!b.hits.length) {
-    if (hops === 0) b.pass('Sampled URL resolves in 0 hops.');
+    if (hops === 0) b.pass(`Sampled URL resolves in 0 hops${slash && slash.status >= 400 ? '; the opposite trailing-slash form is not served' : slash ? '; the opposite trailing-slash form redirects here' : ''}.`);
     else if (hops === 1 && PERMANENT.has(chain[0].status)) b.pass(`Single ${chain[0].status} hop (e.g. trailing-slash or case normalisation, E-1.4-4/5).`);
     else b.pass(`Resolves in ${hops} hop(s).`);
   }

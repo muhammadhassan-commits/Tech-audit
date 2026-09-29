@@ -33,9 +33,10 @@
       <option value="prd">PRD — control-file checks continue (F-RUN-6 / F-RUN-8)</option>
     </select>
   </label>
-  <label class="wide">Additional URLs to audit <small>one per line; honoured verbatim, still subject to the 10-page cap</small>
+  <label class="wide">Specific URLs to audit <small>one per line; honoured verbatim, still subject to the 10-page cap</small>
     <textarea id="opt-urls" rows="2" placeholder="https://example.com/pricing"></textarea>
   </label>
+  <label><input type="checkbox" id="opt-only-urls"> Audit only these URLs <small>skip discovery and sample exactly the URLs above</small></label>
 </section>
 
 <main id="main">

@@ -130,6 +130,17 @@ async function evaluate(ctx) {
   for (const c of declared.filter((d) => d.class === 'INVALID')) candOut.push({ url: c.url, source: 'robots_txt', class: 'INVALID', reachable: false, cells: [] });
 
   const located = candOut.filter((c) => c.reachable && c.class !== 'INVALID');
+
+  // ── Operator rule: every variant must converge on the canonical host ──────
+  // The PRD stops at reachability (R-1.2-6) and F-1.2-6 forbids changing this check's status for
+  // non-converging final URLs. The operator requires more: a variant may answer 200, but it must do
+  // so *at* the canonical host, reaching it by redirect where needed. A sitemap served directly on
+  // both www and non-www is the same file live at two addresses, which is what the www/non-www
+  // decision exists to prevent. Enabled by sitemap.require_canonical_host.
+  const canonicalHost = new URL(ctx.canonicalOrigin).host;
+  const hostMismatches = cfg.sitemap.require_canonical_host
+    ? matrix.filter((m) => m.verdict === 'OPEN' && m.final_url && new URL(m.final_url).host !== canonicalHost)
+    : [];
   ctx.derived.sitemapAccess = {
     variant_scope: scope,
     candidates: candOut.map(({ url, source, class: cls, reachable }) => ({ url, source, class: cls, reachable })),
@@ -178,9 +189,26 @@ async function evaluate(ctx) {
   if (matrix.some((m) => m.http_200_no_upgrade)) b.xref('C-1.3');
   if (new Set(matrix.filter((m) => m.verdict === 'OPEN').map((m) => m.final_url)).size > 1) b.xref('C-1.4');
 
+  if (hostMismatches.length) {
+    const byHost = [...new Set(hostMismatches.map((m) => new URL(m.final_url).host))];
+    b.hit('C-1.2-d', {
+      status: 'FAIL',
+      severity: 'HIGH',
+      reason_code: 'SITEMAP_VARIANT_HOST_MISMATCH',
+      summary: `${hostMismatches.length} variant(s) answer 200 on a host other than the canonical ${canonicalHost} (${byHost.join(', ')}) instead of redirecting to it. The sitemap is therefore live at more than one address: ${hostMismatches.map((m) => `${m.request_url} → ${m.final_url}`).join('; ')}.`,
+      evidence: hostMismatches.map((m) => ev({ kind: 'http_status', source_url: m.request_url, fetch_profile: 'RAW', selector_or_key: `final URL after ${m.hop_count} hop(s)`, observed_value: `${m.final_status} ${m.final_url}`, expected_value: `200 at ${canonicalHost}` })),
+      cross_references: ['C-1.4', 'C-1.5'],
+      // One file served at two hosts is the duplicate-URL situation Google's canonicalisation
+      // guidance addresses, and G5 documents where a sitemap is expected to live. Both are already
+      // registered; they are cited here because they speak to this condition.
+      sourceRefs: ['G7', 'G5'],
+    });
+    b.caveat('Canonical-host convergence is an operator rule layered on the PRD, which scores this check on reachability alone (F-1.2-6). Disable it with sitemap.require_canonical_host = false.');
+  }
+
   const openCells = matrix.filter((m) => m.verdict === 'OPEN');
   b.addEvidence(...openCells.slice(0, 8).map(cellEv));
-  if (!b.hits.length) b.pass(`Sitemap located (${located.map((c) => c.url).join(', ')}) and every ${scope} variant returns 200.`);
+  if (!b.hits.length) b.pass(`Sitemap located (${located.map((c) => c.url).join(', ')}); every ${scope} variant returns 200 and converges on ${canonicalHost}.`);
   return b.build();
 }
 

@@ -6,6 +6,15 @@
 //  R-SCORE-6  > 25% not-testable ⇒ score suppressed, replaced by INSUFFICIENT_EVIDENCE
 //  R-SCORE-9  a finding is scored in its report_section and in no other
 import { SECTIONS, FACTORS } from './catalog.js';
+
+// Critical failures that genuinely stop a crawler reaching or indexing the site, as opposed to
+// critical failures found *during* a successful crawl.
+const CRAWL_BLOCKING = new Set([
+  'ROBOTS_BLOCKS_GOOGLEBOT_SITEWIDE', 'ROBOTS_UNAVAILABLE', 'NOT_INDEXABLE_ROBOTS', 'NOT_INDEXABLE_NOINDEX',
+  'NOINDEX_PRESENT', 'NOINDEX_UNREACHABLE', 'HOMEPAGE_NOT_INDEXABLE', 'NOT_INDEXABLE_STATUS',
+  'SERVER_ERROR', 'REDIRECT_LOOP', 'REDIRECT_HOPS_EXCEEDED', 'HTTPS_DOWNGRADE', 'TLS_INVALID',
+  'AI_BLOCKED_BY_WILDCARD', 'ORIGIN_UNREACHABLE', 'ACCESS_DENIED', 'NOT_INDEXABLE_EMPTY',
+]);
 import { SEV_RANK } from './result.js';
 
 export function pointsFor(result) {
@@ -99,7 +108,11 @@ export function computeScores(report, cfg) {
     verdict = 'INSUFFICIENT_EVIDENCE';
   } else if (criticalFails.length) {
     overall = Math.min(overall ?? 0, 0.4);
-    verdict = 'BLOCKED';
+    // The PRD names this verdict BLOCKED, which reads as "the site could not be crawled" even when
+    // the crawl succeeded and the critical failure is elsewhere (thin content, a broken canonical).
+    // Say which it is: crawling actually prevented, or a critical failure found while crawling.
+    const crawlBlocked = criticalFails.some((r) => CRAWL_BLOCKING.has(r.reason_code));
+    verdict = crawlBlocked ? 'BLOCKED' : 'CRITICAL_ISSUES';
   } else if (overall == null) {
     verdict = 'INSUFFICIENT_EVIDENCE';
   } else {

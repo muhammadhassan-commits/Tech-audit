@@ -16,6 +16,7 @@ function parseArgs(argv) {
     else if (a === '--no-llm') out.config.cap = { ...(out.config.cap || {}), llm_judge: false };
     else if (a === '--ua-probe') out.config.cap = { ...(out.config.cap || {}), ua_probe: true };
     else if (a === '--force-crawl') out.config.force_crawl = true;
+    else if (a === '--only-urls') out.config.operator_urls_only = true;
     else if (a === '--quiet') out.quiet = true;
     else if (!a.startsWith('-')) out.seed = a;
   }
@@ -28,7 +29,7 @@ const c = (s, code) => `${code}${s}\x1b[0m`;
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.seed) {
-    console.error('Usage: wellows-audit <domain> [--json out.json] [--gate prd|strict] [--url https://…] [--staging] [--no-render] [--no-llm]');
+    console.error('Usage: wellows-audit <domain> [--json out.json] [--gate prd|strict] [--url https://… [--only-urls]] [--staging] [--no-render] [--no-llm]');
     process.exit(2);
   }
   const t0 = Date.now();

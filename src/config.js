@@ -89,7 +89,9 @@ export const DEFAULTS = {
   render: { raw_text_floor: 500, budget_ms: 10000, viewport: { width: 412, height: 915 } },
   discovery: { max_links_per_page: 500, max_fetches: 60 },
   group: { slug_collapse_min: 2, saturation_cap: 20, max_groups: 200 },
-  sitemap: { max_paths: 5, max_requests: 24 },
+  // require_canonical_host: operator rule — a variant must reach 200 AT the canonical host, not
+  // merely somewhere. Extends the PRD, which scores C-1.2 on reachability alone (F-1.2-6).
+  sitemap: { max_paths: 5, max_requests: 24, require_canonical_host: true },
   links: { max_validations: 25 },
   hreflang: { max_alternates: 15 },
   cwv: { max_calls: 24, psi_timeout_ms: 90000, concurrency: 4 },
@@ -116,6 +118,8 @@ export const DEFAULTS = {
   expected_standalone_paths: [],
   policy: { ai_blocking_intentional: false, rebranding: false },
   operator_urls: [],
+  // Audit exactly the supplied URLs and skip discovery entirely (E-A4-9).
+  operator_urls_only: false,
   // Gate mode for the robots.txt entry check.
   //  strict — the operator directive: any non-successful robots.txt result halts every further factor.
   //  prd    — PRD F-RUN-6/F-RUN-8: control-file checks (C-1.1, C-1.2, C-5.3) still run.
