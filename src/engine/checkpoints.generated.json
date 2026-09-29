@@ -1,0 +1,2900 @@
+{
+ "C-1.1-a": {
+  "check_id": "C-1.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Status 2xx, Content-Type text/plain (or text/*), parses, and / is allowed for Googlebot",
+  "reason_text": "—"
+ },
+ "C-1.1-b": {
+  "check_id": "C-1.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "ROBOTS_BLOCKS_GOOGLEBOT_SITEWIDE",
+  "condition": "Disallow: / applies to Googlebot (or to * with no Googlebot group)",
+  "reason_text": "ROBOTS_BLOCKS_GOOGLEBOT_SITEWIDE"
+ },
+ "C-1.1-c": {
+  "check_id": "C-1.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ROBOTS_BLOCKS_AUDITED_URL",
+  "condition": "≥ 1 URL in the audit page set is disallowed for Googlebot",
+  "reason_text": "ROBOTS_BLOCKS_AUDITED_URL"
+ },
+ "C-1.1-d": {
+  "check_id": "C-1.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "ROBOTS_UNAVAILABLE",
+  "condition": "5xx / 429 / network error after retries",
+  "reason_text": "ROBOTS_UNAVAILABLE — Google pauses crawling for ~12 h and falls back to a cached copy for up to 30 days; an unavailable"
+ },
+ "C-1.1-e": {
+  "check_id": "C-1.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ROBOTS_IS_HTML",
+  "condition": "2xx but Content-Type is text/html or the body contains <html",
+  "reason_text": "ROBOTS_IS_HTML"
+ },
+ "C-1.1-f": {
+  "check_id": "C-1.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "ROBOTS_ABSENT_TREATED_AS_ALLOW_ALL",
+  "condition": "404 / 410 / other 4xx (not 429)",
+  "reason_text": "ROBOTS_ABSENT_TREATED_AS_ALLOW_ALL — valid state; Google treats it as no restrictions. Emit an advisory note recommendin"
+ },
+ "C-1.1-g": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "ROBOTS_REDIRECT_CHAIN",
+  "condition": "Redirect chain > th.robots_max_redirect_hops (5)",
+  "reason_text": "ROBOTS_REDIRECT_CHAIN"
+ },
+ "C-1.1-h": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "ROBOTS_OVERSIZE",
+  "condition": "Body > th.robots_max_bytes (500 KiB)",
+  "reason_text": "ROBOTS_OVERSIZE"
+ },
+ "C-1.1-i": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "ROBOTS_MALFORMED_LINES",
+  "condition": "≥ 1 IGNORED_MALFORMED line",
+  "reason_text": "ROBOTS_MALFORMED_LINES"
+ },
+ "C-1.1-j": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "ROBOTS_UNSUPPORTED_DIRECTIVE",
+  "condition": "≥ 1 UNSUPPORTED_BY_GOOGLE directive",
+  "reason_text": "ROBOTS_UNSUPPORTED_DIRECTIVE"
+ },
+ "C-1.1-k": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "ROBOTS_BLOCKS_RENDER_RESOURCES",
+  "condition": "Parses, allows /, but contains a Disallow matching a JS/CSS asset path referenced by sampled pages",
+  "reason_text": "ROBOTS_BLOCKS_RENDER_RESOURCES"
+ },
+ "C-1.2-b": {
+  "check_id": "C-1.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_SITEMAP_FOUND",
+  "condition": "No sitemap located: no SAME_DOMAIN declared entry is OPEN on any variant, neither fixed path is OPEN on any variant, no CROSS_HOST entry is OPEN, and **no** cell is INCONCLUSIVE",
+  "reason_text": "NO_SITEMAP_FOUND"
+ },
+ "C-1.2-c": {
+  "check_id": "C-1.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SITEMAP_UNREACHABLE",
+  "condition": "≥ 1 SAME_DOMAIN URL declared in robots.txt returns no 200 on any variant",
+  "reason_text": "SITEMAP_UNREACHABLE — the URL the site advertises to crawlers does not return 200"
+ },
+ "C-1.2-d": {
+  "check_id": "C-1.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "SITEMAP_VARIANT_NOT_OPEN",
+  "condition": "≥ 1 REACHABLE candidate has ≥ 1 variant cell that is NOT_OPEN",
+  "reason_text": "SITEMAP_VARIANT_NOT_OPEN — evidence names every failing variant with its variant_failure"
+ },
+ "C-1.2-e": {
+  "check_id": "C-1.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SITEMAP_CROSS_HOST",
+  "condition": "No SAME_DOMAIN sitemap located, but a CROSS_HOST declared sitemap is OPEN",
+  "reason_text": "SITEMAP_CROSS_HOST — the domain itself returns no 200 sitemap URL on any variant; cross-host submission is valid only wh"
+ },
+ "C-1.2-f": {
+  "check_id": "C-1.2",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "SITEMAP_VARIANT_INCONCLUSIVE",
+  "condition": "≥ 1 REACHABLE candidate, no variant cell NOT_OPEN, ≥ 1 cell INCONCLUSIVE",
+  "reason_text": "SITEMAP_VARIANT_INCONCLUSIVE"
+ },
+ "C-1.2-g": {
+  "check_id": "C-1.2",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "SITEMAP_LOCATE_INCONCLUSIVE",
+  "condition": "No sitemap located, and ≥ 1 cell is INCONCLUSIVE",
+  "reason_text": "SITEMAP_LOCATE_INCONCLUSIVE"
+ },
+ "C-1.2-h": {
+  "check_id": "C-1.2",
+  "status": "NOTE",
+  "status_text": "Note only — does not affect status",
+  "severity": null,
+  "reason_code": "SITEMAP_DECLARATION_INVALID",
+  "condition": "≥ 1 Sitemap: value classified INVALID",
+  "reason_text": "SITEMAP_DECLARATION_INVALID"
+ },
+ "C-1.2-a": {
+  "check_id": "C-1.2",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "≥ 1 REACHABLE candidate, and every cell of every REACHABLE candidate is OPEN (or NOT_APPLICABLE by variant_scope)",
+  "reason_text": "—"
+ },
+ "C-1.3-a": {
+  "check_id": "C-1.3",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Final status 200, ≤ 1 hop, valid TLS, size < 2 MB",
+  "reason_text": "—"
+ },
+ "C-1.3-b": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "SERVER_ERROR",
+  "condition": "Final status 5xx",
+  "reason_text": "SERVER_ERROR"
+ },
+ "C-1.3-c": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CLIENT_ERROR",
+  "condition": "Final status 4xx (not 404/410 for a URL that was expected to exist)",
+  "reason_text": "CLIENT_ERROR"
+ },
+ "C-1.3-d": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "PAGE_NOT_FOUND",
+  "condition": "Sampled URL returns 404/410",
+  "reason_text": "PAGE_NOT_FOUND — a URL discovered on-site should not 404"
+ },
+ "C-1.3-e": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SOFT_404_HANDLING",
+  "condition": "404-probe returns 2xx",
+  "reason_text": "SOFT_404_HANDLING"
+ },
+ "C-1.3-f": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SOFT_404_PAGE",
+  "condition": "2xx page matches R-1.3-3 soft-404 heuristic",
+  "reason_text": "SOFT_404_PAGE"
+ },
+ "C-1.3-g": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ACCESS_RESTRICTED",
+  "condition": "Final status 401/403",
+  "reason_text": "ACCESS_RESTRICTED"
+ },
+ "C-1.3-h": {
+  "check_id": "C-1.3",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "RATE_LIMITED",
+  "condition": "429 after Retry-After honoured",
+  "reason_text": "RATE_LIMITED"
+ },
+ "C-1.3-i": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "TLS_INVALID",
+  "condition": "TLS certificate invalid, expired, or hostname mismatch",
+  "reason_text": "TLS_INVALID"
+ },
+ "C-1.3-j": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_HTTPS_REDIRECT",
+  "condition": "Page reachable on http:// and does not redirect to https://",
+  "reason_text": "NO_HTTPS_REDIRECT"
+ },
+ "C-1.3-k": {
+  "check_id": "C-1.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "RESPONSE_EXCEEDS_2MB",
+  "condition": "Response size > 2 MB",
+  "reason_text": "RESPONSE_EXCEEDS_2MB"
+ },
+ "C-1.3-l": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "RESPONSE_EXCEEDS_15MB",
+  "condition": "Response size > 15 MB",
+  "reason_text": "RESPONSE_EXCEEDS_15MB"
+ },
+ "C-1.3-m": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "EMPTY_RESPONSE",
+  "condition": "200 with Content-Length: 0 or empty body",
+  "reason_text": "EMPTY_RESPONSE"
+ },
+ "C-1.3-n": {
+  "check_id": "C-1.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "UNEXPECTED_CONTENT_TYPE",
+  "condition": "200 but Content-Type is not an HTML type for an HTML page",
+  "reason_text": "UNEXPECTED_CONTENT_TYPE"
+ },
+ "C-1.3-o": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "REDIRECT_LOOP",
+  "condition": "3xx final (redirect loop terminated)",
+  "reason_text": "REDIRECT_LOOP"
+ },
+ "C-1.3-p": {
+  "check_id": "C-1.3",
+  "status": "NOTE",
+  "status_text": "Defer to C-1.6",
+  "severity": null,
+  "reason_code": null,
+  "condition": "200 returned but with X-Robots-Tag: noindex",
+  "reason_text": "—"
+ },
+ "C-1.3-q": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "PAGE_NOT_RESPONDING",
+  "condition": "No complete response within net.unresponsive_ms, **and** a status line was received",
+  "reason_text": "PAGE_NOT_RESPONDING — reported with the observed HTTP status, elapsed_ms and stall_stage"
+ },
+ "C-1.3-r": {
+  "check_id": "C-1.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "PAGE_NOT_RESPONDING",
+  "condition": "No complete response within net.unresponsive_ms, **and** no status line was received",
+  "reason_text": "PAGE_NOT_RESPONDING — http_status null, reported with stall_stage and elapsed_ms"
+ },
+ "C-1.4-a": {
+  "check_id": "C-1.4",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "All four origin variants converge on canonical_origin in ≤ 1 hop via 301/308; sampled pages resolve in 0 hops",
+  "reason_text": "—"
+ },
+ "C-1.4-b": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "REDIRECT_LOOP",
+  "condition": "Redirect loop detected",
+  "reason_text": "REDIRECT_LOOP"
+ },
+ "C-1.4-c": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "MULTIPLE_LIVE_ORIGINS",
+  "condition": "≥ 2 origin variants return 200 without converging",
+  "reason_text": "MULTIPLE_LIVE_ORIGINS"
+ },
+ "C-1.4-d": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "REDIRECT_CHAIN_LONG",
+  "condition": "Chain length ≥ 5",
+  "reason_text": "REDIRECT_CHAIN_LONG"
+ },
+ "C-1.4-e": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "REDIRECT_HOPS_EXCEEDED",
+  "condition": "Chain exceeds net.max_redirect_hops (10) without resolving",
+  "reason_text": "REDIRECT_HOPS_EXCEEDED"
+ },
+ "C-1.4-f": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "REDIRECT_CHAIN",
+  "condition": "Chain length 2–4",
+  "reason_text": "REDIRECT_CHAIN"
+ },
+ "C-1.4-g": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "HTTPS_DOWNGRADE",
+  "condition": "https → http downgrade anywhere in a chain",
+  "reason_text": "HTTPS_DOWNGRADE"
+ },
+ "C-1.4-h": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "TEMPORARY_REDIRECT_FOR_PERMANENT_MOVE",
+  "condition": "Permanent consolidation implemented with 302/303/307",
+  "reason_text": "TEMPORARY_REDIRECT_FOR_PERMANENT_MOVE"
+ },
+ "C-1.4-i": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "REDIRECT_TO_HOME",
+  "condition": "Deep URL redirects to homepage",
+  "reason_text": "REDIRECT_TO_HOME"
+ },
+ "C-1.4-j": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "META_REFRESH_REDIRECT",
+  "condition": "Meta-refresh redirect used where a server redirect is possible",
+  "reason_text": "META_REFRESH_REDIRECT"
+ },
+ "C-1.4-k": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "JS_ONLY_REDIRECT",
+  "condition": "JavaScript-only redirect",
+  "reason_text": "JS_ONLY_REDIRECT"
+ },
+ "C-1.4-l": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "REDIRECT_TARGET_BROKEN",
+  "condition": "Redirect target returns 4xx/5xx",
+  "reason_text": "REDIRECT_TARGET_BROKEN"
+ },
+ "C-1.4-m": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "REDIRECT_TARGET_NONINDEXABLE",
+  "condition": "Redirect target is itself noindex or canonicalised elsewhere",
+  "reason_text": "REDIRECT_TARGET_NONINDEXABLE"
+ },
+ "C-1.4-n": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "CLIENT_SIDE_REDIRECT_DIVERGENCE",
+  "condition": "RAW and RENDERED final URLs differ",
+  "reason_text": "CLIENT_SIDE_REDIRECT_DIVERGENCE"
+ },
+ "C-1.4-o": {
+  "check_id": "C-1.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "RELATIVE_LOCATION_HEADER",
+  "condition": "Location header is relative",
+  "reason_text": "RELATIVE_LOCATION_HEADER — permitted by RFC 7231 but a frequent source of misconfiguration"
+ },
+ "C-1.5-a": {
+  "check_id": "C-1.5",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Exactly one canonical in RAW <head>, absolute, self-referencing, target 200",
+  "reason_text": "—"
+ },
+ "C-1.5-b": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "MULTIPLE_CANONICALS",
+  "condition": "> 1 link[rel=canonical] in <head> with differing values",
+  "reason_text": "MULTIPLE_CANONICALS — Google may ignore all of them"
+ },
+ "C-1.5-c": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_IN_BODY",
+  "condition": "Canonical present only in <body>",
+  "reason_text": "CANONICAL_IN_BODY"
+ },
+ "C-1.5-d": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_RELATIVE",
+  "condition": "Canonical value is relative",
+  "reason_text": "CANONICAL_RELATIVE — resolvable, but Google’s guidance is to use absolute URLs"
+ },
+ "C-1.5-e": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_INVALID",
+  "condition": "Canonical value is empty or unparseable",
+  "reason_text": "CANONICAL_INVALID"
+ },
+ "C-1.5-f": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_TARGET_BROKEN",
+  "condition": "Canonical target returns 4xx/5xx",
+  "reason_text": "CANONICAL_TARGET_BROKEN"
+ },
+ "C-1.5-g": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_TO_REDIRECT",
+  "condition": "Canonical target redirects",
+  "reason_text": "CANONICAL_TO_REDIRECT"
+ },
+ "C-1.5-h": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_TO_NOINDEX",
+  "condition": "Canonical target is noindex",
+  "reason_text": "CANONICAL_TO_NOINDEX"
+ },
+ "C-1.5-i": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_TO_BLOCKED",
+  "condition": "Canonical target is robots-disallowed for Googlebot",
+  "reason_text": "CANONICAL_TO_BLOCKED"
+ },
+ "C-1.5-j": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_LOOP",
+  "condition": "Canonical loop",
+  "reason_text": "CANONICAL_LOOP"
+ },
+ "C-1.5-k": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_CHAIN",
+  "condition": "Canonical chain (target’s canonical is a third URL)",
+  "reason_text": "CANONICAL_CHAIN"
+ },
+ "C-1.5-l": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_NON_RECIPROCAL",
+  "condition": "Cross-canonical whose target does not reciprocate or include this URL’s content",
+  "reason_text": "CANONICAL_NON_RECIPROCAL"
+ },
+ "C-1.5-m": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_ABSENT",
+  "condition": "Canonical absent from both RAW and RENDERED and no Link header",
+  "reason_text": "CANONICAL_ABSENT — legal; Google will choose one. Report as risk, not breakage."
+ },
+ "C-1.5-n": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_JS_INJECTED",
+  "condition": "Present in RENDERED only",
+  "reason_text": "CANONICAL_JS_INJECTED"
+ },
+ "C-1.5-o": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_RAW_RENDERED_MISMATCH",
+  "condition": "RAW and RENDERED canonicals differ",
+  "reason_text": "CANONICAL_RAW_RENDERED_MISMATCH"
+ },
+ "C-1.5-p": {
+  "check_id": "C-1.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_HEADER_HTML_CONFLICT",
+  "condition": "HTTP Link header and HTML canonical disagree",
+  "reason_text": "CANONICAL_HEADER_HTML_CONFLICT"
+ },
+ "C-1.5-q": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_NORMALISATION_MISMATCH",
+  "condition": "Canonical differs from page URL only by protocol, www, trailing slash or case",
+  "reason_text": "CANONICAL_NORMALISATION_MISMATCH"
+ },
+ "C-1.5-r": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CANONICAL_HAS_FRAGMENT",
+  "condition": "Canonical contains a fragment",
+  "reason_text": "CANONICAL_HAS_FRAGMENT"
+ },
+ "C-1.5-s": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CANONICAL_CLUSTER",
+  "condition": "Two distinct sampled pages declare the same canonical",
+  "reason_text": "CANONICAL_CLUSTER"
+ },
+ "C-1.5-t": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_CROSS_DOMAIN",
+  "condition": "Canonical points off canonical_origin",
+  "reason_text": "CANONICAL_CROSS_DOMAIN"
+ },
+ "C-1.6-a": {
+  "check_id": "C-1.6",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "No indexing-restrictive directive for Googlebot from any source",
+  "reason_text": "—"
+ },
+ "C-1.6-b": {
+  "check_id": "C-1.6",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOINDEX_PRESENT",
+  "condition": "Effective noindex or none for Googlebot on a page intended to rank",
+  "reason_text": "NOINDEX_PRESENT"
+ },
+ "C-1.6-c": {
+  "check_id": "C-1.6",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOINDEX_UNREACHABLE",
+  "condition": "noindex present **and** URL robots-disallowed for Googlebot",
+  "reason_text": "NOINDEX_UNREACHABLE"
+ },
+ "C-1.6-d": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "NOFOLLOW_PRESENT",
+  "condition": "nofollow site-wide or on a hub/category page",
+  "reason_text": "NOFOLLOW_PRESENT"
+ },
+ "C-1.6-e": {
+  "check_id": "C-1.6",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NOINDEX_REMOVED_BY_JS",
+  "condition": "RAW has noindex, RENDERED does not",
+  "reason_text": "NOINDEX_REMOVED_BY_JS"
+ },
+ "C-1.6-f": {
+  "check_id": "C-1.6",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NOINDEX_ADDED_BY_JS",
+  "condition": "RENDERED has noindex, RAW does not",
+  "reason_text": "NOINDEX_ADDED_BY_JS"
+ },
+ "C-1.6-g": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "ROBOTS_DIRECTIVE_CONFLICT",
+  "condition": "X-Robots-Tag and meta tag conflict",
+  "reason_text": "ROBOTS_DIRECTIVE_CONFLICT — resolved to most restrictive; report both"
+ },
+ "C-1.6-h": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NOSNIPPET_PRESENT",
+  "condition": "nosnippet present",
+  "reason_text": "NOSNIPPET_PRESENT — suppresses search snippets and blocks use as direct input to AI Overviews and AI Mode"
+ },
+ "C-1.6-i": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "MAX_SNIPPET_ZERO",
+  "condition": "max-snippet:0",
+  "reason_text": "MAX_SNIPPET_ZERO — equivalent to nosnippet in effect"
+ },
+ "C-1.6-j": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "NO_IMAGE_PREVIEW",
+  "condition": "max-image-preview:none",
+  "reason_text": "NO_IMAGE_PREVIEW"
+ },
+ "C-1.6-k": {
+  "check_id": "C-1.6",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "UNAVAILABLE_AFTER_EXPIRED",
+  "condition": "unavailable_after in the past",
+  "reason_text": "UNAVAILABLE_AFTER_EXPIRED"
+ },
+ "C-1.6-l": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "META_ROBOTS_IN_BODY",
+  "condition": "Meta robots in <body>",
+  "reason_text": "META_ROBOTS_IN_BODY — ignored by Google"
+ },
+ "C-1.6-m": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "MULTIPLE_META_ROBOTS",
+  "condition": "Multiple meta name=\"robots\" with conflicting values",
+  "reason_text": "MULTIPLE_META_ROBOTS — most restrictive applies"
+ },
+ "C-1.6-n": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "DATA_NOSNIPPET_INVALID_ELEMENT",
+  "condition": "data-nosnippet on an unsupported element",
+  "reason_text": "DATA_NOSNIPPET_INVALID_ELEMENT"
+ },
+ "C-1.7-a": {
+  "check_id": "C-1.7",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "indexability_state = INDEXABLE",
+  "reason_text": "—"
+ },
+ "C-1.7-b": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOT_INDEXABLE_ROBOTS",
+  "condition": "BLOCKED_ROBOTS",
+  "reason_text": "NOT_INDEXABLE_ROBOTS"
+ },
+ "C-1.7-c": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOT_INDEXABLE_NOINDEX",
+  "condition": "NOINDEX",
+  "reason_text": "NOT_INDEXABLE_NOINDEX"
+ },
+ "C-1.7-d": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOT_INDEXABLE_STATUS",
+  "condition": "NON_200",
+  "reason_text": "NOT_INDEXABLE_STATUS"
+ },
+ "C-1.7-e": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NOT_INDEXABLE_SOFT_404",
+  "condition": "SOFT_404",
+  "reason_text": "NOT_INDEXABLE_SOFT_404"
+ },
+ "C-1.7-f": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NOT_INDEXABLE_CANONICAL",
+  "condition": "CANONICALISED_AWAY on a page that should rank",
+  "reason_text": "NOT_INDEXABLE_CANONICAL"
+ },
+ "C-1.7-g": {
+  "check_id": "C-1.7",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "CANONICALISED_BY_DESIGN",
+  "condition": "CANONICALISED_AWAY by design (duplicate/facet)",
+  "reason_text": "CANONICALISED_BY_DESIGN"
+ },
+ "C-1.7-h": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NOT_INDEXABLE_EMPTY",
+  "condition": "NO_CONTENT",
+  "reason_text": "NOT_INDEXABLE_EMPTY"
+ },
+ "C-1.7-i": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "INDEXABILITY_CONFLICT",
+  "condition": "CONFLICTED",
+  "reason_text": "INDEXABILITY_CONFLICT"
+ },
+ "C-1.7-j": {
+  "check_id": "C-1.7",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "INDEXABLE_ONLY_AFTER_RENDER",
+  "condition": "INDEXABLE but render_dependent = true",
+  "reason_text": "INDEXABLE_ONLY_AFTER_RENDER"
+ },
+ "C-1.7-k": {
+  "check_id": "C-1.7",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "GSC_STATE_DIVERGENCE",
+  "condition": "Computed state and GSC state disagree",
+  "reason_text": "GSC_STATE_DIVERGENCE"
+ },
+ "C-1.7-l": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "HOMEPAGE_NOT_INDEXABLE",
+  "condition": "Homepage not indexable",
+  "reason_text": "HOMEPAGE_NOT_INDEXABLE — escalate to run headline"
+ },
+ "C-1.7-m": {
+  "check_id": "C-1.7",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "LOW_INDEXABLE_RATIO",
+  "condition": "< 70% of sampled pages indexable",
+  "reason_text": "LOW_INDEXABLE_RATIO"
+ },
+ "C-2.1-a": {
+  "check_id": "C-2.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Exactly one <title> in RAW <head>, non-empty, unique within the sample, no stuffing",
+  "reason_text": "—"
+ },
+ "C-2.1-b": {
+  "check_id": "C-2.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "TITLE_MISSING",
+  "condition": "No <title> in RAW or RENDERED",
+  "reason_text": "TITLE_MISSING"
+ },
+ "C-2.1-c": {
+  "check_id": "C-2.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "TITLE_EMPTY",
+  "condition": "<title> empty or whitespace-only",
+  "reason_text": "TITLE_EMPTY"
+ },
+ "C-2.1-d": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_MULTIPLE",
+  "condition": "> 1 <title> element",
+  "reason_text": "TITLE_MULTIPLE — browsers and parsers use the first; the rest are dead weight"
+ },
+ "C-2.1-e": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "TITLE_JS_INJECTED",
+  "condition": "Present in RENDERED only",
+  "reason_text": "TITLE_JS_INJECTED"
+ },
+ "C-2.1-f": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_RAW_RENDERED_MISMATCH",
+  "condition": "RAW and RENDERED titles differ",
+  "reason_text": "TITLE_RAW_RENDERED_MISMATCH"
+ },
+ "C-2.1-g": {
+  "check_id": "C-2.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_DUPLICATE",
+  "condition": "Exact duplicate of another sampled page’s title",
+  "reason_text": "TITLE_DUPLICATE"
+ },
+ "C-2.1-h": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_NEAR_DUPLICATE",
+  "condition": "Near-duplicate (≥ 0.9 similarity)",
+  "reason_text": "TITLE_NEAR_DUPLICATE"
+ },
+ "C-2.1-i": {
+  "check_id": "C-2.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_BOILERPLATE",
+  "condition": "Boilerplate/template default",
+  "reason_text": "TITLE_BOILERPLATE"
+ },
+ "C-2.1-j": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_KEYWORD_STUFFED",
+  "condition": "Keyword stuffing detected",
+  "reason_text": "TITLE_KEYWORD_STUFFED"
+ },
+ "C-2.1-k": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "TITLE_OUTSIDE_HEAD",
+  "condition": "<title> outside <head>",
+  "reason_text": "TITLE_OUTSIDE_HEAD"
+ },
+ "C-2.1-l": {
+  "check_id": "C-2.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "TITLE_H1_BRAND_ONLY",
+  "condition": "Title identical to <h1> **and** both are the bare brand name",
+  "reason_text": "TITLE_H1_BRAND_ONLY"
+ },
+ "C-2.1-m": {
+  "check_id": "C-2.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "TITLE_PLACEHOLDER_LEAK",
+  "condition": "Title contains an unresolved template placeholder ({{, %s, [title], %%)",
+  "reason_text": "TITLE_PLACEHOLDER_LEAK"
+ },
+ "C-2.2-a": {
+  "check_id": "C-2.2",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Exactly one, non-empty, unique in sample, not a keyword list",
+  "reason_text": "—"
+ },
+ "C-2.2-b": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_MISSING",
+  "condition": "Missing from RAW and RENDERED",
+  "reason_text": "METADESC_MISSING — **not** **FAIL**: Google generates snippets from page content and often ignores the tag"
+ },
+ "C-2.2-c": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_EMPTY",
+  "condition": "Empty / whitespace-only",
+  "reason_text": "METADESC_EMPTY"
+ },
+ "C-2.2-d": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "METADESC_MULTIPLE",
+  "condition": "> 1 description element",
+  "reason_text": "METADESC_MULTIPLE"
+ },
+ "C-2.2-e": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_DUPLICATE",
+  "condition": "Exact duplicate across sampled pages",
+  "reason_text": "METADESC_DUPLICATE"
+ },
+ "C-2.2-f": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "METADESC_TEMPLATED",
+  "condition": "Near-duplicate / templated",
+  "reason_text": "METADESC_TEMPLATED"
+ },
+ "C-2.2-g": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_KEYWORD_LIST",
+  "condition": "Keyword-list shape",
+  "reason_text": "METADESC_KEYWORD_LIST"
+ },
+ "C-2.2-h": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_JS_INJECTED",
+  "condition": "Present in RENDERED only",
+  "reason_text": "METADESC_JS_INJECTED"
+ },
+ "C-2.2-i": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "METADESC_RAW_RENDERED_MISMATCH",
+  "condition": "RAW/RENDERED mismatch",
+  "reason_text": "METADESC_RAW_RENDERED_MISMATCH"
+ },
+ "C-2.2-j": {
+  "check_id": "C-2.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "METADESC_PLACEHOLDER_LEAK",
+  "condition": "Contains an unresolved placeholder",
+  "reason_text": "METADESC_PLACEHOLDER_LEAK"
+ },
+ "C-2.2-k": {
+  "check_id": "C-2.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "METADESC_EQUALS_TITLE",
+  "condition": "Identical to <title>",
+  "reason_text": "METADESC_EQUALS_TITLE"
+ },
+ "C-2.2-l": {
+  "check_id": "C-2.2",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "SNIPPET_SUPPRESSED",
+  "condition": "Page carries nosnippet or max-snippet:0",
+  "reason_text": "SNIPPET_SUPPRESSED — the description cannot be used; cross-reference C-1.6"
+ },
+ "C-2.3-a": {
+  "check_id": "C-2.3",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Exactly one visible h1 in the main region, non-empty, no level skips, unique in sample",
+  "reason_text": "—"
+ },
+ "C-2.3-b": {
+  "check_id": "C-2.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "H1_MISSING",
+  "condition": "No h1 in RAW or RENDERED",
+  "reason_text": "H1_MISSING"
+ },
+ "C-2.3-c": {
+  "check_id": "C-2.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "H1_EMPTY",
+  "condition": "h1 present but empty",
+  "reason_text": "H1_EMPTY"
+ },
+ "C-2.3-d": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "H1_MULTIPLE",
+  "condition": "> 1 h1 in the main region",
+  "reason_text": "H1_MULTIPLE — valid HTML5 and not a ranking problem, but it weakens the page’s single-topic signal for extraction"
+ },
+ "C-2.3-e": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "H1_HIDDEN",
+  "condition": "Only h1 is visually hidden",
+  "reason_text": "H1_HIDDEN"
+ },
+ "C-2.3-f": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "H1_JS_INJECTED",
+  "condition": "h1 present in RENDERED only",
+  "reason_text": "H1_JS_INJECTED"
+ },
+ "C-2.3-g": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "H1_RAW_RENDERED_MISMATCH",
+  "condition": "RAW/RENDERED h1 text differs",
+  "reason_text": "H1_RAW_RENDERED_MISMATCH"
+ },
+ "C-2.3-h": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "H1_DUPLICATE",
+  "condition": "Duplicate h1 across sampled pages",
+  "reason_text": "H1_DUPLICATE"
+ },
+ "C-2.3-i": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HEADING_LEVEL_SKIP",
+  "condition": "≥ 1 heading-level skip",
+  "reason_text": "HEADING_LEVEL_SKIP"
+ },
+ "C-2.3-j": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HEADING_STARTS_BELOW_H1",
+  "condition": "Document starts with h2+ before any h1",
+  "reason_text": "HEADING_STARTS_BELOW_H1"
+ },
+ "C-2.3-k": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HEADINGS_EMPTY_MULTIPLE",
+  "condition": "≥ 3 empty headings",
+  "reason_text": "HEADINGS_EMPTY_MULTIPLE"
+ },
+ "C-2.3-l": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HEADINGS_LAYOUT_MISUSE",
+  "condition": "Headings used for layout (R-2.3-7)",
+  "reason_text": "HEADINGS_LAYOUT_MISUSE"
+ },
+ "C-2.3-m": {
+  "check_id": "C-2.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "H1_IS_SITE_NAME",
+  "condition": "Only h1 is the site name/logo",
+  "reason_text": "H1_IS_SITE_NAME"
+ },
+ "C-2.3-n": {
+  "check_id": "C-2.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_HEADINGS",
+  "condition": "Zero headings of any level",
+  "reason_text": "NO_HEADINGS — cross-reference C-6.3"
+ },
+ "C-2.3-o": {
+  "check_id": "C-2.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "H1_PLACEHOLDER_LEAK",
+  "condition": "h1 contains an unresolved placeholder",
+  "reason_text": "H1_PLACEHOLDER_LEAK"
+ },
+ "C-2.4-a": {
+  "check_id": "C-2.4",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Every sampled page has ≥ 1 contextual internal link; no broken targets; generic-anchor ratio < 20%",
+  "reason_text": "—"
+ },
+ "C-2.4-b": {
+  "check_id": "C-2.4",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "SINGLE_PAGE_SITE",
+  "condition": "site_shape = single_page",
+  "reason_text": "SINGLE_PAGE_SITE"
+ },
+ "C-2.4-c": {
+  "check_id": "C-2.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "BROKEN_INTERNAL_LINK",
+  "condition": "≥ 1 contextual link target returns 4xx/5xx",
+  "reason_text": "BROKEN_INTERNAL_LINK"
+ },
+ "C-2.4-d": {
+  "check_id": "C-2.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "ORPHAN_IN_SAMPLE",
+  "condition": "A sampled page (other than the homepage) has in-degree 0 within the sample",
+  "reason_text": "ORPHAN_IN_SAMPLE — sample-scoped, **never** a claim about the whole site"
+ },
+ "C-2.4-e": {
+  "check_id": "C-2.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "GENERIC_ANCHOR_TEXT",
+  "condition": "Generic-anchor ratio ≥ 20%",
+  "reason_text": "GENERIC_ANCHOR_TEXT"
+ },
+ "C-2.4-f": {
+  "check_id": "C-2.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "EMPTY_ANCHOR",
+  "condition": "≥ 1 empty anchor",
+  "reason_text": "EMPTY_ANCHOR"
+ },
+ "C-2.4-g": {
+  "check_id": "C-2.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "INTERNAL_NOFOLLOW",
+  "condition": "Internal rel=\"nofollow\" present",
+  "reason_text": "INTERNAL_NOFOLLOW"
+ },
+ "C-2.4-h": {
+  "check_id": "C-2.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_CONTEXTUAL_LINKS",
+  "condition": "A sampled page has 0 contextual internal links",
+  "reason_text": "NO_CONTEXTUAL_LINKS"
+ },
+ "C-2.4-i": {
+  "check_id": "C-2.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "LINKS_REQUIRE_JS",
+  "condition": "> 30% of internal links exist only after rendering",
+  "reason_text": "LINKS_REQUIRE_JS"
+ },
+ "C-2.4-j": {
+  "check_id": "C-2.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NON_ANCHOR_NAVIGATION",
+  "condition": "Navigation exists only as non-anchor elements",
+  "reason_text": "NON_ANCHOR_NAVIGATION — Google discovers links only from <a href>"
+ },
+ "C-3.1-a": {
+  "check_id": "C-3.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "All in-scope types expected for this page_type are present, parse, have required fields, resolved @ids, and align with visible content",
+  "reason_text": "—"
+ },
+ "C-3.1-b": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_STRUCTURED_DATA",
+  "condition": "No structured data of any kind on the page",
+  "reason_text": "NO_STRUCTURED_DATA"
+ },
+ "C-3.1-c": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "JSONLD_PARSE_ERROR",
+  "condition": "JSON-LD block fails to parse",
+  "reason_text": "JSONLD_PARSE_ERROR"
+ },
+ "C-3.1-d": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_REQUIRED_FIELD_MISSING",
+  "condition": "An in-scope type is missing a tool-required field",
+  "reason_text": "SCHEMA_REQUIRED_FIELD_MISSING"
+ },
+ "C-3.1-e": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_DANGLING_REFERENCE",
+  "condition": "@id reference does not resolve within the page graph",
+  "reason_text": "SCHEMA_DANGLING_REFERENCE"
+ },
+ "C-3.1-f": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_UNSTABLE_ENTITY_ID",
+  "condition": "S1/S2 @id differs across sampled pages",
+  "reason_text": "SCHEMA_UNSTABLE_ENTITY_ID"
+ },
+ "C-3.1-g": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_DUPLICATE_ENTITY",
+  "condition": "> 1 Organization or WebSite node with conflicting values on one page",
+  "reason_text": "SCHEMA_DUPLICATE_ENTITY"
+ },
+ "C-3.1-h": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_URL_CANONICAL_MISMATCH",
+  "condition": "S3 url ≠ page canonical",
+  "reason_text": "SCHEMA_URL_CANONICAL_MISMATCH"
+ },
+ "C-3.1-i": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_CONTENT_MISMATCH",
+  "condition": "Marked-up value absent from visible content (R-3.1-8)",
+  "reason_text": "SCHEMA_CONTENT_MISMATCH — violates Google’s structured-data policy"
+ },
+ "C-3.1-j": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_TYPE_MISUSE",
+  "condition": "Type used on an inappropriate page (R-3.1-9)",
+  "reason_text": "SCHEMA_TYPE_MISUSE"
+ },
+ "C-3.1-k": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_INVALID_PROPERTY_CASE",
+  "condition": "Property casing invalid (Url, Name, …)",
+  "reason_text": "SCHEMA_INVALID_PROPERTY_CASE"
+ },
+ "C-3.1-l": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_PLACEHOLDER_VALUE",
+  "condition": "Placeholder value detected",
+  "reason_text": "SCHEMA_PLACEHOLDER_VALUE"
+ },
+ "C-3.1-m": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_INVALID_DATE",
+  "condition": "Date invalid, or dateModified < datePublished, or future-dated",
+  "reason_text": "SCHEMA_INVALID_DATE"
+ },
+ "C-3.1-n": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "SCHEMA_JS_INJECTED",
+  "condition": "Structured data present in RENDERED only",
+  "reason_text": "SCHEMA_JS_INJECTED"
+ },
+ "C-3.1-o": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_RAW_RENDERED_MISMATCH",
+  "condition": "RAW and RENDERED graphs differ materially",
+  "reason_text": "SCHEMA_RAW_RENDERED_MISMATCH"
+ },
+ "C-3.1-p": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_ON_BLOCKED_PAGE",
+  "condition": "Page is noindex/robots-blocked and carries structured data",
+  "reason_text": "SCHEMA_ON_BLOCKED_PAGE"
+ },
+ "C-3.1-q": {
+  "check_id": "C-3.1",
+  "status": "PASS",
+  "status_text": "INFO → PASS",
+  "severity": null,
+  "reason_code": "SCHEMA_OUT_OF_SCOPE_DETECTED",
+  "condition": "Out-of-scope type present",
+  "reason_text": "SCHEMA_OUT_OF_SCOPE_DETECTED — inventoried only, never validated"
+ },
+ "C-3.1-r": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "FAQ_MARKUP_INVALID",
+  "condition": "FAQPage present but malformed",
+  "reason_text": "FAQ_MARKUP_INVALID — no rich result since 7 May 2026; retained for extraction value only"
+ },
+ "C-3.1-s": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SCHEMA_TYPE_ABSENT",
+  "condition": "Expected in-scope type absent for this page_type (e.g. no BreadcrumbList on a deep page)",
+  "reason_text": "SCHEMA_TYPE_ABSENT"
+ },
+ "C-3.1-t": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_ENTITY_MARKUP",
+  "condition": "No Organization (or Person, on a personal site) node anywhere in the page graph",
+  "reason_text": "NO_ENTITY_MARKUP"
+ },
+ "C-3.1-u": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "FAQ_MARKUP_CONTENT_MISMATCH",
+  "condition": "FAQPage markup does not correspond to visible Q&A",
+  "reason_text": "FAQ_MARKUP_CONTENT_MISMATCH — violates Google’s structured-data content policy"
+ },
+ "C-3.1-v": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "FAQ_NOT_MARKED_UP",
+  "condition": "Visible Q&A block with no FAQPage markup",
+  "reason_text": "FAQ_NOT_MARKED_UP — no rich result available since 7 May 2026; extraction value only"
+ },
+ "C-3.1-w": {
+  "check_id": "C-3.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "SPEAKABLE_SELECTOR_UNRESOLVED",
+  "condition": "speakable selector resolves to nothing",
+  "reason_text": "SPEAKABLE_SELECTOR_UNRESOLVED"
+ },
+ "C-3.1-x": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "WEAK_ENTITY_ANCHORING",
+  "condition": "sameAs absent, or fewer than schema.min_sameas resolving profiles",
+  "reason_text": "WEAK_ENTITY_ANCHORING"
+ },
+ "C-3.1-y": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "AMBIGUOUS_ENTITY_UNANCHORED",
+  "condition": "Entity name is ambiguous and sameAs is absent",
+  "reason_text": "AMBIGUOUS_ENTITY_UNANCHORED"
+ },
+ "C-3.1-z": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "NO_AUTHOR_MARKUP",
+  "condition": "Author named in visible text but no Person node referenced from author",
+  "reason_text": "NO_AUTHOR_MARKUP"
+ },
+ "C-3.1-aa": {
+  "check_id": "C-3.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "DATE_NOT_USER_VISIBLE",
+  "condition": "Date present in markup but not visible on the page",
+  "reason_text": "DATE_NOT_USER_VISIBLE"
+ },
+ "C-3.2-a": {
+  "check_id": "C-3.2",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "MONOLINGUAL_SITE",
+  "condition": "is_multilingual = false",
+  "reason_text": "MONOLINGUAL_SITE"
+ },
+ "C-3.2-b": {
+  "check_id": "C-3.2",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Multilingual, annotations present, all codes valid, all self-referencing, all return links present, all targets 200 and indexable",
+  "reason_text": "—"
+ },
+ "C-3.2-c": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_NOT_FOUND_IN_HTML_OR_HEADERS",
+  "condition": "Multilingual signals present but no hreflang annotations in HTML <head> or Link headers on any sampled page",
+  "reason_text": "HREFLANG_NOT_FOUND_IN_HTML_OR_HEADERS — WARN, not FAIL: absence from the two evaluated mechanisms does not prove hreflan"
+ },
+ "C-3.2-d": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "HREFLANG_NO_RETURN_LINK",
+  "condition": "≥ 1 missing return link, where the alternate publishes its own HTML/header hreflang set and that set omits the source",
+  "reason_text": "HREFLANG_NO_RETURN_LINK — non-reciprocal annotations are ignored entirely · **reported under Section 1 — Crawl & Indexin"
+ },
+ "C-3.2-e": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_NO_SELF_REFERENCE",
+  "condition": "Missing self-reference",
+  "reason_text": "HREFLANG_NO_SELF_REFERENCE"
+ },
+ "C-3.2-f": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_INVALID_CODE",
+  "condition": "Invalid language or region code",
+  "reason_text": "HREFLANG_INVALID_CODE"
+ },
+ "C-3.2-g": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_REGION_ONLY",
+  "condition": "Region code without a language (hreflang=\"us\")",
+  "reason_text": "HREFLANG_REGION_ONLY"
+ },
+ "C-3.2-h": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_RELATIVE_URL",
+  "condition": "href relative or protocol-relative",
+  "reason_text": "HREFLANG_RELATIVE_URL"
+ },
+ "C-3.2-i": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_TARGET_BROKEN",
+  "condition": "Alternate returns 4xx/5xx",
+  "reason_text": "HREFLANG_TARGET_BROKEN · **reported under Section 1 — Crawl & Indexing** (R-3.2-15)"
+ },
+ "C-3.2-j": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_TARGET_NONINDEXABLE",
+  "condition": "Alternate is noindex or robots-blocked",
+  "reason_text": "HREFLANG_TARGET_NONINDEXABLE"
+ },
+ "C-3.2-k": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "HREFLANG_CANONICAL_CONFLICT",
+  "condition": "Canonical points to a different language within the cluster",
+  "reason_text": "HREFLANG_CANONICAL_CONFLICT · **reported under Section 1 — Crawl & Indexing** (R-3.2-15)"
+ },
+ "C-3.2-l": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_DUPLICATE_CODE",
+  "condition": "Same code mapped to two URLs in one cluster",
+  "reason_text": "HREFLANG_DUPLICATE_CODE · **reported under Section 1 — Crawl & Indexing** (R-3.2-15)"
+ },
+ "C-3.2-m": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HREFLANG_NO_X_DEFAULT",
+  "condition": "No x-default in the cluster",
+  "reason_text": "HREFLANG_NO_X_DEFAULT"
+ },
+ "C-3.2-n": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "HREFLANG_HTML_LANG_MISMATCH",
+  "condition": "<html lang> disagrees with the self-referencing hreflang",
+  "reason_text": "HREFLANG_HTML_LANG_MISMATCH"
+ },
+ "C-3.2-o": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_MECHANISM_CONFLICT",
+  "condition": "Two mechanisms annotate the same URL with different sets",
+  "reason_text": "HREFLANG_MECHANISM_CONFLICT"
+ },
+ "C-3.2-p": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_JS_INJECTED",
+  "condition": "Annotations present in RENDERED only",
+  "reason_text": "HREFLANG_JS_INJECTED"
+ },
+ "C-3.2-q": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "HREFLANG_SINGLETON_CLUSTER",
+  "condition": "Cluster has only one member",
+  "reason_text": "HREFLANG_SINGLETON_CLUSTER"
+ },
+ "C-3.2-r": {
+  "check_id": "C-3.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "HREFLANG_IN_BODY",
+  "condition": "hreflang in <body> rather than <head>",
+  "reason_text": "HREFLANG_IN_BODY"
+ },
+ "C-3.2-s": {
+  "check_id": "C-3.2",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE for that pair",
+  "severity": null,
+  "reason_code": "HREFLANG_RETURN_LINK_UNVERIFIABLE",
+  "condition": "The alternate publishes no HTML or header hreflang at all, so no return link can be verified for that pair",
+  "reason_text": "HREFLANG_RETURN_LINK_UNVERIFIABLE"
+ },
+ "C-4.1-a": {
+  "check_id": "C-4.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Field data present; LCP ≤ 2500, INP ≤ 200, CLS ≤ 0.10 at p75",
+  "reason_text": "—"
+ },
+ "C-4.1-b": {
+  "check_id": "C-4.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CWV_POOR",
+  "condition": "Field data present; any metric in the Poor band",
+  "reason_text": "CWV_POOR (+ metric name)"
+ },
+ "C-4.1-c": {
+  "check_id": "C-4.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CWV_NEEDS_IMPROVEMENT",
+  "condition": "Field data present; any metric in Needs-improvement, none Poor",
+  "reason_text": "CWV_NEEDS_IMPROVEMENT (+ metric name)"
+ },
+ "C-4.1-d": {
+  "check_id": "C-4.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "CWV_ORIGIN_LEVEL_ONLY",
+  "condition": "No URL-level field data; origin-level available and all Good",
+  "reason_text": "CWV_ORIGIN_LEVEL_ONLY — verdict describes the origin, not this page"
+ },
+ "C-4.1-e": {
+  "check_id": "C-4.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CWV_ORIGIN_LEVEL_FAILING",
+  "condition": "No URL-level field data; origin-level available and failing",
+  "reason_text": "CWV_ORIGIN_LEVEL_FAILING — page-specific verdict unavailable"
+ },
+ "C-4.1-f": {
+  "check_id": "C-4.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE for assessment; lab reported as diagnostics",
+  "severity": null,
+  "reason_code": "CWV_NO_FIELD_DATA",
+  "condition": "No field data at any level; lab data available",
+  "reason_text": "CWV_NO_FIELD_DATA"
+ },
+ "C-4.1-g": {
+  "check_id": "C-4.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "CWV_NO_DATA",
+  "condition": "No field data, no lab data",
+  "reason_text": "CWV_NO_DATA"
+ },
+ "C-4.1-h": {
+  "check_id": "C-4.1",
+  "status": "NOTE",
+  "status_text": "Fall to next rung",
+  "severity": null,
+  "reason_code": "CRUX_RECORD_NOT_FOUND",
+  "condition": "CrUX returns 404 (record not found)",
+  "reason_text": "CRUX_RECORD_NOT_FOUND — expected for low-traffic URLs, **not** an error"
+ },
+ "C-4.1-i": {
+  "check_id": "C-4.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "CWV_QUOTA_EXHAUSTED",
+  "condition": "API quota exhausted / 429",
+  "reason_text": "CWV_QUOTA_EXHAUSTED"
+ },
+ "C-4.1-j": {
+  "check_id": "C-4.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "CWV_NO_API_KEY",
+  "condition": "API key missing or invalid",
+  "reason_text": "CWV_NO_API_KEY"
+ },
+ "C-4.1-k": {
+  "check_id": "C-4.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "LAB_RUN_FAILED",
+  "condition": "Lab run fails (page did not load, timed out)",
+  "reason_text": "LAB_RUN_FAILED"
+ },
+ "C-4.1-l": {
+  "check_id": "C-4.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CWV_LONG_TAIL",
+  "condition": "Field p75 Good but > 25% of samples in Poor",
+  "reason_text": "CWV_LONG_TAIL — passes assessment, but a quarter of visits are poor"
+ },
+ "C-4.1-m": {
+  "check_id": "C-4.1",
+  "status": "NOTE",
+  "status_text": "Report both; overall = worse of the two",
+  "severity": null,
+  "reason_code": "CWV_FORM_FACTOR_DIVERGENCE",
+  "condition": "Mobile passes, desktop fails (or vice versa)",
+  "reason_text": "CWV_FORM_FACTOR_DIVERGENCE"
+ },
+ "C-4.1-n": {
+  "check_id": "C-4.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CWV_DATA_STALE",
+  "condition": "collectionPeriod ends > 5 days before run date",
+  "reason_text": "CWV_DATA_STALE"
+ },
+ "C-5.1-a": {
+  "check_id": "C-5.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "All retrieval-oriented agents (OAI-SearchBot, Claude-SearchBot, PerplexityBot, Applebot) allowed on content paths",
+  "reason_text": "—"
+ },
+ "C-5.1-b": {
+  "check_id": "C-5.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "AI_RETRIEVAL_AGENT_BLOCKED",
+  "condition": "≥ 1 retrieval-oriented agent blocked site-wide",
+  "reason_text": "AI_RETRIEVAL_AGENT_BLOCKED"
+ },
+ "C-5.1-c": {
+  "check_id": "C-5.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ALL_AI_AGENTS_BLOCKED",
+  "condition": "All AI agents blocked site-wide",
+  "reason_text": "ALL_AI_AGENTS_BLOCKED — legitimate if deliberate; the finding must ask whether it is"
+ },
+ "C-5.1-d": {
+  "check_id": "C-5.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "AI_TRAINING_BLOCKED_BY_CHOICE",
+  "condition": "Training-only agents (GPTBot, ClaudeBot, CCBot) blocked; retrieval agents allowed",
+  "reason_text": "AI_TRAINING_BLOCKED_BY_CHOICE — a licensing decision, reported not scored"
+ },
+ "C-5.1-e": {
+  "check_id": "C-5.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "GOOGLE_EXTENDED_DISALLOWED",
+  "condition": "Google-Extended disallowed",
+  "reason_text": "GOOGLE_EXTENDED_DISALLOWED — informational; no effect on Google Search inclusion or ranking"
+ },
+ "C-5.1-f": {
+  "check_id": "C-5.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "APPLEBOT_EXTENDED_DISALLOWED",
+  "condition": "Applebot-Extended disallowed",
+  "reason_text": "APPLEBOT_EXTENDED_DISALLOWED — informational; no effect on Apple search visibility"
+ },
+ "C-5.1-g": {
+  "check_id": "C-5.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "AI_ACCESS_UNDECLARED",
+  "condition": "No AI-specific groups; agents inherit * which is permissive",
+  "reason_text": "AI_ACCESS_UNDECLARED"
+ },
+ "C-5.1-h": {
+  "check_id": "C-5.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "AI_BLOCKED_BY_WILDCARD",
+  "condition": "No AI-specific groups; * group is Disallow: /",
+  "reason_text": "AI_BLOCKED_BY_WILDCARD — usually unintended collateral of a Googlebot-focused rule"
+ },
+ "C-5.1-i": {
+  "check_id": "C-5.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "AI_BLOCKED_AT_SERVER",
+  "condition": "UA probe shows a 403/404 where robots.txt allows",
+  "reason_text": "AI_BLOCKED_AT_SERVER — carries the unverified-UA caveat"
+ },
+ "C-5.1-j": {
+  "check_id": "C-5.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "AI_INPUT_SUPPRESSED_BY_SNIPPET_DIRECTIVE",
+  "condition": "nosnippet / max-snippet:0 on sampled content pages",
+  "reason_text": "AI_INPUT_SUPPRESSED_BY_SNIPPET_DIRECTIVE"
+ },
+ "C-5.1-k": {
+  "check_id": "C-5.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "CONTENT_SIGNAL_DECLARED",
+  "condition": "Content-Signal present and internally consistent",
+  "reason_text": "CONTENT_SIGNAL_DECLARED"
+ },
+ "C-5.1-l": {
+  "check_id": "C-5.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CONTENT_SIGNAL_CONTRADICTION",
+  "condition": "Content-Signal contradicts the robots rules in the same group (e.g. ai-train=yes while GPTBot is disallowed)",
+  "reason_text": "CONTENT_SIGNAL_CONTRADICTION"
+ },
+ "C-5.1-m": {
+  "check_id": "C-5.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "AI_BLOCKED_ON_CONTENT_PATHS",
+  "condition": "Blocking rules target content paths that carry the site’s substantive material",
+  "reason_text": "AI_BLOCKED_ON_CONTENT_PATHS"
+ },
+ "C-5.1-n": {
+  "check_id": "C-5.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "ROBOTS_UNAVAILABLE",
+  "condition": "robots.txt unavailable",
+  "reason_text": "ROBOTS_UNAVAILABLE"
+ },
+ "C-5.2-a": {
+  "check_id": "C-5.2",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "text_ratio ≥ 0.90 and content_similarity ≥ 0.85 and all R-5.2-5 elements present in RAW",
+  "reason_text": "—"
+ },
+ "C-5.2-b": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "CONTENT_REQUIRES_JS",
+  "condition": "text_ratio < th.raw_text_ratio_fail (0.30)",
+  "reason_text": "CONTENT_REQUIRES_JS"
+ },
+ "C-5.2-c": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CONTENT_PARTIALLY_REQUIRES_JS",
+  "condition": "0.30 ≤ text_ratio < 0.70",
+  "reason_text": "CONTENT_PARTIALLY_REQUIRES_JS"
+ },
+ "C-5.2-d": {
+  "check_id": "C-5.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_MOSTLY_RAW",
+  "condition": "0.70 ≤ text_ratio < 0.90",
+  "reason_text": "CONTENT_MOSTLY_RAW"
+ },
+ "C-5.2-e": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "SPA_SHELL_ONLY",
+  "condition": "SPA shell detected (R-5.2-6)",
+  "reason_text": "SPA_SHELL_ONLY"
+ },
+ "C-5.2-f": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "H1_REQUIRES_JS",
+  "condition": "h1 absent in RAW, present in RENDERED",
+  "reason_text": "H1_REQUIRES_JS"
+ },
+ "C-5.2-g": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "TITLE_REQUIRES_JS",
+  "condition": "title absent in RAW",
+  "reason_text": "TITLE_REQUIRES_JS"
+ },
+ "C-5.2-h": {
+  "check_id": "C-5.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "CANONICAL_REQUIRES_JS",
+  "condition": "Canonical absent in RAW, present in RENDERED",
+  "reason_text": "CANONICAL_REQUIRES_JS"
+ },
+ "C-5.2-i": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "LINKS_REQUIRE_JS",
+  "condition": "> 30% of internal links only in RENDERED",
+  "reason_text": "LINKS_REQUIRE_JS"
+ },
+ "C-5.2-j": {
+  "check_id": "C-5.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "NOSCRIPT_NOT_SUBSTANTIVE",
+  "condition": "<noscript> contains only an enable-JS message",
+  "reason_text": "NOSCRIPT_NOT_SUBSTANTIVE"
+ },
+ "C-5.2-k": {
+  "check_id": "C-5.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_REMOVED_BY_JS",
+  "condition": "RAW content exceeds RENDERED (text_ratio > 1.2)",
+  "reason_text": "CONTENT_REMOVED_BY_JS — content present at fetch time is stripped at render time"
+ },
+ "C-5.2-l": {
+  "check_id": "C-5.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "NO_CONTENT_EITHER_PROFILE",
+  "condition": "Both profiles empty",
+  "reason_text": "NO_CONTENT_EITHER_PROFILE"
+ },
+ "C-5.2-m": {
+  "check_id": "C-5.2",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "RENDER_UNAVAILABLE",
+  "condition": "cap.render_js = false",
+  "reason_text": "RENDER_UNAVAILABLE"
+ },
+ "C-5.2-n": {
+  "check_id": "C-5.2",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "RENDER_FAILED",
+  "condition": "RENDERED fetch failed on this page",
+  "reason_text": "RENDER_FAILED"
+ },
+ "C-5.3-a": {
+  "check_id": "C-5.3",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "200, markdown, valid H1, ≥ 1 H2 link section, all sampled links resolve",
+  "reason_text": "—"
+ },
+ "C-5.3-b": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LLMS_TXT_ABSENT",
+  "condition": "404 / absent",
+  "reason_text": "LLMS_TXT_ABSENT — optional practice; state plainly it is not required by Google"
+ },
+ "C-5.3-c": {
+  "check_id": "C-5.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_IS_HTML",
+  "condition": "200 but Content-Type: text/html or an HTML body",
+  "reason_text": "LLMS_TXT_IS_HTML"
+ },
+ "C-5.3-d": {
+  "check_id": "C-5.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_NO_H1",
+  "condition": "200 but no H1",
+  "reason_text": "LLMS_TXT_NO_H1 — the only required element of the spec"
+ },
+ "C-5.3-e": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_NO_LINK_SECTIONS",
+  "condition": "200 but no H2 link sections",
+  "reason_text": "LLMS_TXT_NO_LINK_SECTIONS"
+ },
+ "C-5.3-f": {
+  "check_id": "C-5.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_BROKEN_LINKS",
+  "condition": "≥ 1 link returns 4xx/5xx",
+  "reason_text": "LLMS_TXT_BROKEN_LINKS"
+ },
+ "C-5.3-g": {
+  "check_id": "C-5.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_LINKS_BLOCKED",
+  "condition": "≥ 1 link is robots-blocked for AI agents",
+  "reason_text": "LLMS_TXT_LINKS_BLOCKED — the file advertises what the site forbids"
+ },
+ "C-5.3-h": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LLMS_TXT_LOW_COVERAGE",
+  "condition": "Coverage < 50% of sampled pages",
+  "reason_text": "LLMS_TXT_LOW_COVERAGE"
+ },
+ "C-5.3-i": {
+  "check_id": "C-5.3",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "LLMS_TXT_UNREACHABLE",
+  "condition": "5xx",
+  "reason_text": "LLMS_TXT_UNREACHABLE"
+ },
+ "C-5.3-j": {
+  "check_id": "C-5.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_SOFT_404",
+  "condition": "200 returning the site’s 404 page",
+  "reason_text": "LLMS_TXT_SOFT_404"
+ },
+ "C-5.3-k": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LLMS_TXT_NO_SUMMARY",
+  "condition": "No blockquote summary",
+  "reason_text": "LLMS_TXT_NO_SUMMARY"
+ },
+ "C-5.3-l": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_ENTITY_INCONSISTENT",
+  "condition": "Description conflicts with Organization.description / homepage h1",
+  "reason_text": "LLMS_TXT_ENTITY_INCONSISTENT"
+ },
+ "C-5.3-m": {
+  "check_id": "C-5.3",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "MARKDOWN_TWINS_PRESENT",
+  "condition": "Markdown twins available under content negotiation or .md paths",
+  "reason_text": "MARKDOWN_TWINS_PRESENT — positive signal, recorded not required"
+ },
+ "C-5.3-n": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "LLMS_TXT_CONTRADICTS_ROBOTS",
+  "condition": "llms.txt present but /robots.txt blocks the AI agents entirely",
+  "reason_text": "LLMS_TXT_CONTRADICTS_ROBOTS"
+ },
+ "C-5.4-a": {
+  "check_id": "C-5.4",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Page found, completeness ≥ 0.70, accessible, consistent with other surfaces",
+  "reason_text": "—"
+ },
+ "C-5.4-b": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "AI_INSTRUCTIONS_PAGE_ABSENT",
+  "condition": "No page found after the full ladder",
+  "reason_text": "AI_INSTRUCTIONS_PAGE_ABSENT — optional practice; never FAIL"
+ },
+ "C-5.4-c": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "AI_INSTRUCTIONS_PAGE_THIN",
+  "condition": "Found, completeness < 0.40",
+  "reason_text": "AI_INSTRUCTIONS_PAGE_THIN"
+ },
+ "C-5.4-d": {
+  "check_id": "C-5.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "AI_INSTRUCTIONS_PAGE_BLOCKED",
+  "condition": "Found but noindex or robots-blocked",
+  "reason_text": "AI_INSTRUCTIONS_PAGE_BLOCKED — the page exists for machines that are forbidden from reading it"
+ },
+ "C-5.4-e": {
+  "check_id": "C-5.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "AI_INSTRUCTIONS_PAGE_REQUIRES_JS",
+  "condition": "Found but present only in RENDERED",
+  "reason_text": "AI_INSTRUCTIONS_PAGE_REQUIRES_JS"
+ },
+ "C-5.4-f": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "AI_INSTRUCTIONS_PAGE_ORPHANED",
+  "condition": "Found but orphaned (no internal link from any crawled page, and not in llms.txt)",
+  "reason_text": "AI_INSTRUCTIONS_PAGE_ORPHANED"
+ },
+ "C-5.4-g": {
+  "check_id": "C-5.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ENTITY_DESCRIPTION_CONFLICT",
+  "condition": "Definitional sentence conflicts with Organization.description or homepage h1",
+  "reason_text": "ENTITY_DESCRIPTION_CONFLICT"
+ },
+ "C-5.4-h": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "AI_INSTRUCTIONS_NO_DATE",
+  "condition": "No last-updated date",
+  "reason_text": "AI_INSTRUCTIONS_NO_DATE"
+ },
+ "C-5.4-i": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "AI_INSTRUCTIONS_NO_COMPETITIVE_CONTEXT",
+  "condition": "No competitors or category named",
+  "reason_text": "AI_INSTRUCTIONS_NO_COMPETITIVE_CONTEXT"
+ },
+ "C-5.4-j": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "AI_INSTRUCTIONS_NO_DIRECTIVES",
+  "condition": "No explicit instructions block",
+  "reason_text": "AI_INSTRUCTIONS_NO_DIRECTIVES"
+ },
+ "C-5.4-k": {
+  "check_id": "C-5.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "AI_INSTRUCTIONS_CLAIM_CONTRADICTED",
+  "condition": "A verifiable claim contradicts the live site (e.g. a price that does not match the pricing page)",
+  "reason_text": "AI_INSTRUCTIONS_CLAIM_CONTRADICTED"
+ },
+ "C-5.4-l": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "AI_INSTRUCTIONS_STALE",
+  "condition": "Last-updated date older than th.freshness_stale_days",
+  "reason_text": "AI_INSTRUCTIONS_STALE"
+ },
+ "C-5.4-m": {
+  "check_id": "C-5.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "AI_INSTRUCTIONS_MULTIPLE",
+  "condition": "Multiple candidate pages found",
+  "reason_text": "AI_INSTRUCTIONS_MULTIPLE — split authority; consolidate"
+ },
+ "C-6.1-a": {
+  "check_id": "C-6.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "extraction_agreement ≥ 0.80, main content ≥ th.min_words_content_page (150), semantic HTML present, encoding correct",
+  "reason_text": "—"
+ },
+ "C-6.1-b": {
+  "check_id": "C-6.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "RAW_CONTENT_ABSENT",
+  "condition": "Main content < 50 words in RAW",
+  "reason_text": "RAW_CONTENT_ABSENT"
+ },
+ "C-6.1-c": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "RAW_CONTENT_THIN",
+  "condition": "Main content 50–149 words",
+  "reason_text": "RAW_CONTENT_THIN"
+ },
+ "C-6.1-d": {
+  "check_id": "C-6.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CONTENT_BOUNDARIES_AMBIGUOUS",
+  "condition": "extraction_agreement < 0.50",
+  "reason_text": "CONTENT_BOUNDARIES_AMBIGUOUS"
+ },
+ "C-6.1-e": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_BOUNDARIES_UNCLEAR",
+  "condition": "0.50 ≤ extraction_agreement < 0.80",
+  "reason_text": "CONTENT_BOUNDARIES_UNCLEAR"
+ },
+ "C-6.1-f": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "BOILERPLATE_DOMINANT",
+  "condition": "boilerplate_ratio > 0.60",
+  "reason_text": "BOILERPLATE_DOMINANT"
+ },
+ "C-6.1-g": {
+  "check_id": "C-6.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CONTENT_IN_IMAGES",
+  "condition": "Substantive content only inside images (R-6.1-5)",
+  "reason_text": "CONTENT_IN_IMAGES"
+ },
+ "C-6.1-h": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "CONTENT_IN_IFRAME",
+  "condition": "Substantive content only inside same-origin iframes",
+  "reason_text": "CONTENT_IN_IFRAME"
+ },
+ "C-6.1-i": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_IN_HIDDEN_PANELS",
+  "condition": "Tab/accordion panel content absent from RAW",
+  "reason_text": "CONTENT_IN_HIDDEN_PANELS"
+ },
+ "C-6.1-j": {
+  "check_id": "C-6.1",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ENCODING_CORRUPTION",
+  "condition": "Encoding mismatch / mojibake detected",
+  "reason_text": "ENCODING_CORRUPTION"
+ },
+ "C-6.1-k": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_SEMANTIC_HTML",
+  "condition": "No semantic HTML landmarks at all",
+  "reason_text": "NO_SEMANTIC_HTML"
+ },
+ "C-6.1-l": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LOW_TEXT_TO_HTML_RATIO",
+  "condition": "text_to_html_ratio < 0.05",
+  "reason_text": "LOW_TEXT_TO_HTML_RATIO"
+ },
+ "C-6.1-m": {
+  "check_id": "C-6.1",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "MARKDOWN_TWIN_AVAILABLE",
+  "condition": "Markdown twin available",
+  "reason_text": "MARKDOWN_TWIN_AVAILABLE — recorded as a positive"
+ },
+ "C-6.1-n": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "UA_CONDITIONAL_CONTENT",
+  "condition": "UA-conditional content difference detected",
+  "reason_text": "UA_CONDITIONAL_CONTENT"
+ },
+ "C-6.1-o": {
+  "check_id": "C-6.1",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "RAW_FETCH_FAILED",
+  "condition": "RAW fetch failed",
+  "reason_text": "RAW_FETCH_FAILED"
+ },
+ "C-6.2-a": {
+  "check_id": "C-6.2",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "Consistent name across ≥ 3 sources, definitional statement present, page-level subject declared",
+  "reason_text": "—"
+ },
+ "C-6.2-b": {
+  "check_id": "C-6.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ENTITY_NAME_INCONSISTENT",
+  "condition": "Entity name differs across sources",
+  "reason_text": "ENTITY_NAME_INCONSISTENT"
+ },
+ "C-6.2-c": {
+  "check_id": "C-6.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_DEFINITIONAL_STATEMENT",
+  "condition": "No definitional statement on the homepage",
+  "reason_text": "NO_DEFINITIONAL_STATEMENT"
+ },
+ "C-6.2-d": {
+  "check_id": "C-6.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "ENTITY_DESCRIPTION_INCONSISTENT",
+  "condition": "Description differs materially across schema / meta / llms.txt / AI page",
+  "reason_text": "ENTITY_DESCRIPTION_INCONSISTENT"
+ },
+ "C-6.2-e": {
+  "check_id": "C-6.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "PAGE_SUBJECT_UNCLEAR",
+  "condition": "Page has no h1, or h1 shares no token with <title>",
+  "reason_text": "PAGE_SUBJECT_UNCLEAR"
+ },
+ "C-6.2-f": {
+  "check_id": "C-6.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "NO_AUTHOR_ATTRIBUTION",
+  "condition": "Article without a named author",
+  "reason_text": "NO_AUTHOR_ATTRIBUTION"
+ },
+ "C-6.2-g": {
+  "check_id": "C-6.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "LOW_ENTITY_CLARITY",
+  "condition": "entity_clarity_score < 0.50",
+  "reason_text": "LOW_ENTITY_CLARITY (MODELLED)"
+ },
+ "C-6.2-h": {
+  "check_id": "C-6.2",
+  "status": "NOTE",
+  "status_text": "Gate results only",
+  "severity": null,
+  "reason_code": "RUBRIC_DISABLED",
+  "condition": "cap.llm_judge = false",
+  "reason_text": "RUBRIC_DISABLED — the deterministic findings still stand"
+ },
+ "C-6.3-a": {
+  "check_id": "C-6.3",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "≥ 2 headings, no section > 400 words, chunk_viability ≥ 0.70, ≥ 1 list or table where content ≥ 300 words",
+  "reason_text": "—"
+ },
+ "C-6.3-b": {
+  "check_id": "C-6.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "NO_CONTENT_STRUCTURE",
+  "condition": "Wall of text (R-6.3-5)",
+  "reason_text": "NO_CONTENT_STRUCTURE"
+ },
+ "C-6.3-c": {
+  "check_id": "C-6.3",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "POOR_CHUNK_VIABILITY",
+  "condition": "chunk_viability < 0.40",
+  "reason_text": "POOR_CHUNK_VIABILITY"
+ },
+ "C-6.3-d": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "MODERATE_CHUNK_VIABILITY",
+  "condition": "0.40 ≤ chunk_viability < 0.70",
+  "reason_text": "MODERATE_CHUNK_VIABILITY"
+ },
+ "C-6.3-e": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "OVERLONG_SECTIONS",
+  "condition": "≥ 1 section > 400 words",
+  "reason_text": "OVERLONG_SECTIONS"
+ },
+ "C-6.3-f": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "OVERLONG_PARAGRAPHS",
+  "condition": "≥ 3 paragraphs > 150 words",
+  "reason_text": "OVERLONG_PARAGRAPHS"
+ },
+ "C-6.3-g": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "INSUFFICIENT_HEADINGS",
+  "condition": "Only 1 heading on a page ≥ 800 words",
+  "reason_text": "INSUFFICIENT_HEADINGS"
+ },
+ "C-6.3-h": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LAYOUT_TABLES",
+  "condition": "Layout tables detected",
+  "reason_text": "LAYOUT_TABLES"
+ },
+ "C-6.3-i": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "TABLE_NO_HEADERS",
+  "condition": "Data table without <th>",
+  "reason_text": "TABLE_NO_HEADERS"
+ },
+ "C-6.3-j": {
+  "check_id": "C-6.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "HEADING_HIERARCHY_BROKEN",
+  "condition": "Heading-level skips ≥ 3",
+  "reason_text": "HEADING_HIERARCHY_BROKEN"
+ },
+ "C-6.3-k": {
+  "check_id": "C-6.3",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "INSUFFICIENT_CONTENT_FOR_STRUCTURE",
+  "condition": "Main content < 150 words",
+  "reason_text": "INSUFFICIENT_CONTENT_FOR_STRUCTURE — defer to C-6.1"
+ },
+ "C-6.4-a": {
+  "check_id": "C-6.4",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "standalone_ratio ≥ 0.70, ≥ 1 question heading answered within 3 sentences (or a definitional sentence present), attribution present",
+  "reason_text": "—"
+ },
+ "C-6.4-b": {
+  "check_id": "C-6.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "CONTENT_NOT_SELF_CONTAINED",
+  "condition": "standalone_ratio < 0.40",
+  "reason_text": "CONTENT_NOT_SELF_CONTAINED"
+ },
+ "C-6.4-c": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "WEAK_SELF_CONTAINMENT",
+  "condition": "0.40 ≤ standalone_ratio < 0.70",
+  "reason_text": "WEAK_SELF_CONTAINMENT"
+ },
+ "C-6.4-d": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "QUESTIONS_NOT_DIRECTLY_ANSWERED",
+  "condition": "Question headings present but none answered within 3 sentences",
+  "reason_text": "QUESTIONS_NOT_DIRECTLY_ANSWERED"
+ },
+ "C-6.4-e": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_DEFINITIONAL_ANSWER",
+  "condition": "No definitional sentence for the page subject",
+  "reason_text": "NO_DEFINITIONAL_ANSWER"
+ },
+ "C-6.4-f": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LOW_FACTUAL_DENSITY",
+  "condition": "Factual density < 0.10 on a page making factual claims",
+  "reason_text": "LOW_FACTUAL_DENSITY"
+ },
+ "C-6.4-g": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_ATTRIBUTION_SCAFFOLDING",
+  "condition": "Factual claims with no source, author or date",
+  "reason_text": "NO_ATTRIBUTION_SCAFFOLDING"
+ },
+ "C-6.4-h": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "ANSWER_ANTIPATTERNS",
+  "condition": "≥ 3 throat-clearing or deferring answer openings",
+  "reason_text": "ANSWER_ANTIPATTERNS"
+ },
+ "C-6.4-i": {
+  "check_id": "C-6.4",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "LOW_EXTRACTABILITY",
+  "condition": "extractability_score < 0.50",
+  "reason_text": "LOW_EXTRACTABILITY (MODELLED)"
+ },
+ "C-6.4-j": {
+  "check_id": "C-6.4",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "INSUFFICIENT_CONTENT",
+  "condition": "Content < 150 words",
+  "reason_text": "INSUFFICIENT_CONTENT"
+ },
+ "C-6.4-k": {
+  "check_id": "C-6.4",
+  "status": "NOTE",
+  "status_text": "Gate only",
+  "severity": null,
+  "reason_code": "RUBRIC_DISABLED",
+  "condition": "cap.llm_judge = false",
+  "reason_text": "RUBRIC_DISABLED"
+ },
+ "C-6.5-a": {
+  "check_id": "C-6.5",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "≥ 1 date signal present, valid, consistent across sources, and content_age_days within threshold for the page type",
+  "reason_text": "—"
+ },
+ "C-6.5-b": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "NO_DATE_SIGNAL",
+  "condition": "No date signal from any source on a date-sensitive page type",
+  "reason_text": "NO_DATE_SIGNAL"
+ },
+ "C-6.5-c": {
+  "check_id": "C-6.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "DATE_LOGIC_INVALID",
+  "condition": "dateModified earlier than datePublished",
+  "reason_text": "DATE_LOGIC_INVALID"
+ },
+ "C-6.5-d": {
+  "check_id": "C-6.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "MEDIUM",
+  "reason_code": "DATE_IN_FUTURE",
+  "condition": "Future date",
+  "reason_text": "DATE_IN_FUTURE"
+ },
+ "C-6.5-e": {
+  "check_id": "C-6.5",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "LOW",
+  "reason_code": "DATE_UNPARSEABLE",
+  "condition": "Unparseable date value",
+  "reason_text": "DATE_UNPARSEABLE"
+ },
+ "C-6.5-f": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "DATEMODIFIED_IS_BUILD_TIMESTAMP",
+  "condition": "Build-timestamp pattern (R-6.5-4)",
+  "reason_text": "DATEMODIFIED_IS_BUILD_TIMESTAMP — the freshness signal carries no information"
+ },
+ "C-6.5-g": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_STALE",
+  "condition": "content_age_days > th.freshness_stale_days (540) on a date-sensitive page",
+  "reason_text": "CONTENT_STALE"
+ },
+ "C-6.5-h": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CONTENT_AGEING",
+  "condition": "content_age_days > th.freshness_warn_days (365) on a date-sensitive page",
+  "reason_text": "CONTENT_AGEING"
+ },
+ "C-6.5-i": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SELF_REPORTED_STALENESS",
+  "condition": "Title/heading contains a year ≥ 2 years old",
+  "reason_text": "SELF_REPORTED_STALENESS"
+ },
+ "C-6.5-j": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SITE_CONTENT_STALE",
+  "condition": "Median sampled content_age_days > th.freshness_stale_days",
+  "reason_text": "SITE_CONTENT_STALE"
+ },
+ "C-6.5-k": {
+  "check_id": "C-6.5",
+  "status": "NOT_APPLICABLE",
+  "status_text": "NOT_APPLICABLE",
+  "severity": null,
+  "reason_code": "EVERGREEN_PAGE_TYPE",
+  "condition": "Page type is not date-sensitive",
+  "reason_text": "EVERGREEN_PAGE_TYPE"
+ },
+ "C-6.5-l": {
+  "check_id": "C-6.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "CONTENT_FACTUALLY_OUTDATED",
+  "condition": "≥ 1 page claim contradicted by more recent information (R-6.5-10)",
+  "reason_text": "CONTENT_FACTUALLY_OUTDATED (MODELLED) — evidence carries the quote, the one-sentence correction and the reference URL"
+ },
+ "C-6.5-m": {
+  "check_id": "C-6.5",
+  "status": "NOTE",
+  "status_text": "Deterministic findings only",
+  "severity": null,
+  "reason_code": "RUBRIC_DISABLED",
+  "condition": "cap.llm_judge = false",
+  "reason_text": "RUBRIC_DISABLED — the currency check did not run"
+ }
+}

@@ -1,0 +1,41 @@
+{
+  "_note": "Overrides for src/config.js defaults. Every PRD §2 value is configuration, not a constant in code; anything omitted here uses the binding default.",
+
+  "gate": {
+    "_note": "robots_mode: 'strict' = the operator directive — any robots.txt failure, incompleteness or error halts every further factor. 'prd' = PRD F-RUN-6/F-RUN-8 — control-file checks (C-1.1, C-1.2, C-5.3) continue.",
+    "robots_mode": "strict"
+  },
+
+  "env": "production",
+  "force_crawl": false,
+
+  "cap": {
+    "_note": "ua_probe stays false by default: probing with vendor UA strings is opt-in, logged, and caveated (R-FETCH-7).",
+    "render_js": true,
+    "llm_judge": true,
+    "ua_probe": false,
+    "crux_api": true,
+    "psi_api": true,
+    "gsc_api": false,
+    "commoncrawl": true
+  },
+
+  "net": {
+    "contact_url": "https://wellows.com/ai-info"
+  },
+
+  "expected_noindex_paths": ["/cart", "/checkout", "/account", "/login", "/wp-admin", "/search", "/thank-you"],
+  "expected_temporary_paths": [],
+  "expected_standalone_paths": [],
+
+  "policy": {
+    "_note": "Set ai_blocking_intentional when AI blocking is a deliberate licensing decision: C-5.1-b/c then report rather than fail (E-5.1-1), and no unblocking is recommended (F-5.1-3).",
+    "ai_blocking_intentional": false,
+    "rebranding": false
+  },
+
+  "llm": {
+    "model": "claude-opus-5",
+    "max_calls_per_run": 20
+  }
+}

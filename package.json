@@ -1,0 +1,28 @@
+{
+  "name": "wellows-initial-audit",
+  "version": "1.1.0",
+  "description": "Initial Technical SEO + LLM Visibility Audit \u2014 sequential processing engine, robots.txt-gated pipeline and dashboard (PRD v2.0).",
+  "type": "module",
+  "main": "src/server.js",
+  "bin": {
+    "wellows-audit": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "audit": "node src/cli.js",
+    "test": "node --test test/unit.test.js test/gate.test.js test/resilience.test.js",
+    "build:checkpoints": "node src/sources/build-checkpoints.js",
+    "check:sources": "node --test test/unit.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "cheerio": "^1.0.0",
+    "tldts": "^6.1.0"
+  },
+  "optionalDependencies": {
+    "playwright-core": "^1.47.0"
+  }
+}

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Initial Technical SEO + LLM Visibility Audit</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Initial Technical SEO&nbsp;+ LLM Visibility Audit</h1>
+      <p class="sub">Sequential pipeline · execution begins at <strong>1. Crawl &amp; Indexing › robots.txt</strong></p>
+    </div>
+  </div>
+  <form id="run-form" autocomplete="off">
+    <input id="seed" name="seed" type="text" placeholder="example.com" aria-label="Website to audit" required>
+    <button id="run-btn" type="submit">Run audit</button>
+    <button id="opts-btn" type="button" class="ghost" aria-expanded="false">Options</button>
+  </form>
+</header>
+
+<section id="options" class="options" hidden>
+  <label><input type="checkbox" id="opt-render" checked> Render JavaScript <small>headless Chromium for the homepage and client-rendered pages</small></label>
+  <label><input type="checkbox" id="opt-llm" checked> LLM rubric <small>Section 6 sub-scores; deterministic gates always run</small></label>
+  <label><input type="checkbox" id="opt-ua"> UA-variant probing <small>opt-in; off by default (R-FETCH-7)</small></label>
+  <label><input type="checkbox" id="opt-staging"> Staging environment <small>downgrades expected blocks and noindex</small></label>
+  <label class="wide">Gate mode
+    <select id="opt-gate">
+      <option value="strict">Strict — any robots.txt failure halts every factor</option>
+      <option value="prd">PRD — control-file checks continue (F-RUN-6 / F-RUN-8)</option>
+    </select>
+  </label>
+  <label class="wide">Additional URLs to audit <small>one per line; honoured verbatim, still subject to the 10-page cap</small>
+    <textarea id="opt-urls" rows="2" placeholder="https://example.com/pricing"></textarea>
+  </label>
+</section>
+
+<main id="main">
+  <section id="idle" class="panel idle">
+    <div id="recent" hidden>
+      <h2>Previous audits</h2>
+      <ul id="recent-list" class="recent-list"></ul>
+    </div>
+    <h2>Ready</h2>
+    <p>Enter a domain to start. The engine resolves the origin, then runs <strong>robots.txt</strong> first as a blocking gate: if that check fails, is incomplete or errors, no further factor is evaluated.</p>
+    <ol class="pipeline-preview">
+      <li><span>P0</span> Target intake &amp; normalisation</li>
+      <li><span>P1</span> robots.txt — <em>gate</em></li>
+      <li><span>P2</span> Page discovery &amp; sampling (1–10 pages)</li>
+      <li><span>P3</span> Per-page acquisition (raw + rendered)</li>
+      <li><span>P4–P6</span> Site, page and cross-page checks</li>
+      <li><span>P7</span> Scoring &amp; report</li>
+    </ol>
+  </section>
+
+  <section id="progress" class="panel" hidden>
+    <h2>Running <span id="progress-target"></span></h2>
+    <div id="gate-banner" class="gate" hidden></div>
+    <ol id="phase-list" class="phases"></ol>
+    <div id="activity" class="activity" aria-live="polite"></div>
+  </section>
+
+  <section id="report" hidden>
+    <div class="report-actions">
+      <span id="report-stamp" class="muted"></span>
+      <span class="spacer"></span>
+      <button id="btn-print" type="button" class="ghost">Print / save as PDF</button>
+      <button id="btn-json" type="button" class="ghost">Download JSON</button>
+      <button id="btn-expand" type="button" class="ghost">Expand all</button>
+    </div>
+    <div class="grid-top">
+      <article class="panel score-card">
+        <h2>Overall audit score</h2>
+        <div class="score-ring" id="score-ring">
+          <svg viewBox="0 0 120 120" role="img" aria-labelledby="score-label">
+            <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+            <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="score-value"><span id="score-number">—</span><small id="score-suffix">%</small></div>
+        </div>
+        <p class="verdict" id="verdict-badge"></p>
+        <p class="score-note" id="score-note"></p>
+        <dl class="run-meta" id="run-meta"></dl>
+      </article>
+
+      <article class="panel">
+        <h2>Error distribution</h2>
+        <div class="dist-toggle" role="tablist">
+          <button class="active" data-dist="severity" role="tab">By severity</button>
+          <button data-dist="section" role="tab">By section</button>
+          <button data-dist="reason" role="tab">By reason code</button>
+        </div>
+        <div id="dist-body" class="dist-body"></div>
+        <p class="legend" id="dist-legend"></p>
+      </article>
+
+      <article class="panel">
+        <h2>Section scores</h2>
+        <div id="section-scores" class="section-scores"></div>
+      </article>
+    </div>
+
+    <article class="panel" id="sample-panel">
+      <h2>Pages analysed <small id="sample-quality"></small></h2>
+      <div class="table-wrap"><table id="sample-table"><thead><tr><th>Page type</th><th>URL</th><th>Pattern</th><th>Group</th><th>Discovery</th><th>Status</th><th>Indexability</th></tr></thead><tbody></tbody></table></div>
+      <p class="muted" id="sample-absent"></p>
+      <details id="discovery-detail"><summary>Discovery &amp; grouping detail</summary><div id="discovery-body"></div></details>
+    </article>
+
+    <div id="checklist"></div>
+  </section>
+</main>
+
+<div id="ref-pop" class="ref-pop" hidden role="dialog" aria-label="Source reference"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

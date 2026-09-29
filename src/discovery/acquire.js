@@ -1,0 +1,133 @@
+// P3 — per-page acquisition. RAW for every sampled page (primary budget); RENDERED conditionally
+// (R-FETCH-3a): always for the homepage, otherwise only on a client-rendering signature, and only
+// when elapsed + render.budget_ms fits inside net.url_budget_ms (R-FETCH-2).
+import { bodyText } from '../net/http.js';
+import { extractFacts, hasClientRenderingSignature } from '../parse/html.js';
+import { normalizeUrl } from '../parse/url.js';
+
+export async function acquirePages(ctx) {
+  const { http, renderer, cfg } = ctx;
+  const pages = [];
+  const dropped = [];
+  let failures = 0;
+  const hp = ctx.derived.homepageAcq;
+
+  for (const sel of ctx.sample.pages) {
+    ctx.emit('acquire', { url: sel.url, page_type: sel.page_type });
+    const isHomepage = sel.page_type === 'homepage';
+    let raw;
+    let rawHtml;
+    let rendered = null;
+    let renderState;
+    if (isHomepage && hp) {
+      raw = hp.raw;
+      rawHtml = hp.html;
+      rendered = hp.rendered && !hp.rendered.error ? hp.rendered : null;
+      renderState = rendered ? 'RENDERED' : hp.rendered?.error?.code === 'RENDER_UNAVAILABLE' || !cfg.cap.render_js ? 'UNAVAILABLE' : hp.rendered ? 'FAILED' : 'BUDGET';
+    } else {
+      raw = await http.fetch(sel.url, { budgetClass: 'primary', exempt: sel.discovery_method === 'OPERATOR_SUPPLIED' });
+      if (raw.budget_class !== 'primary' && (raw.not_responding || raw.error)) {
+        raw = await http.fetch(sel.url, { budgetClass: 'primary', noCache: true }); // discovery probe was secondary-budget
+      }
+      rawHtml = bodyText(raw);
+    }
+    const finalUrl = normalizeUrl(raw.final_url || sel.url) || sel.url;
+    const page = {
+      url: sel.url,
+      finalUrl,
+      page_type: sel.page_type,
+      sel,
+      isHomepage,
+      raw,
+      rawHtml,
+      rawFacts: null,
+      rendered: null,
+      renFacts: null,
+      render_state: null,
+      not_responding: !!raw.not_responding,
+      is_html: true,
+    };
+
+    if (page.not_responding) {
+      failures++;
+      page.render_state = 'NOT_ATTEMPTED';
+      pages.push(page);
+      ctx.discovery?.unresponsive_urls?.push({ url: sel.url, http_status: raw.last_status_received ?? null, stall_stage: raw.stall_stage, elapsed_ms: raw.elapsed_ms });
+      continue;
+    }
+    const ct = String(raw.headers?.['content-type'] || '');
+    page.is_html = !ct || /html|xml/i.test(ct);
+    page.is_pdf = /application\/pdf/i.test(ct);
+    page.rawFacts = extractFacts(rawHtml, finalUrl, ctx.canonicalOrigin);
+
+    // E-A4-6 — a selected non-homepage page that 404s/5xxs at P3 is dropped from content checks.
+    if (!isHomepage && raw.status != null && (raw.status >= 400 || raw.status < 200)) {
+      dropped.push(page);
+      ctx.flags.add('SELECTION_REPLACED');
+      failures++;
+      continue;
+    }
+
+    if (!isHomepage) {
+      const needsRender = hasClientRenderingSignature(page.rawFacts, cfg.render.raw_text_floor);
+      if (!cfg.cap.render_js || renderer.available === false) renderState = 'UNAVAILABLE';
+      else if (!needsRender) renderState = 'NOT_REQUIRED';
+      else if (raw.elapsed_ms + cfg.render.budget_ms > cfg.net.url_budget_ms) renderState = 'BUDGET';
+      else {
+        ctx.emit('fetch', { url: finalUrl, purpose: 'RENDERED' });
+        const r = await renderer.render(finalUrl);
+        if (r.error) renderState = r.error.code === 'RENDER_UNAVAILABLE' ? 'UNAVAILABLE' : 'FAILED';
+        else {
+          rendered = r;
+          renderState = 'RENDERED';
+        }
+      }
+    }
+    page.render_state = renderState;
+    if (rendered) {
+      page.rendered = rendered;
+      page.renFacts = extractFacts(rendered.html, normalizeUrl(rendered.final_url) || finalUrl, ctx.canonicalOrigin);
+    }
+    pages.push(page);
+  }
+
+  ctx.pages = pages;
+  ctx.derived.droppedPages = dropped;
+  ctx.homepage = pages.find((p) => p.isHomepage) || null;
+  if (dropped.length) ctx.sample.pages = ctx.sample.pages.filter((s) => !dropped.some((d) => d.url === s.url));
+  const total = pages.length + dropped.length;
+  if (total && failures / total > 0.5) ctx.flags.add('RUN_QUALITY_DEGRADED'); // F-A4-5
+  for (const s of ctx.sample.pages) {
+    const p = pages.find((x) => x.url === s.url);
+    if (p) s.final_status = p.raw.status;
+  }
+}
+
+/** Caveat text per render state, attached by checks that read RENDERED. */
+export function renderCaveat(page) {
+  switch (page.render_state) {
+    case 'NOT_REQUIRED':
+      return 'Evaluated on raw HTML; this page showed no client-rendering signature.';
+    case 'BUDGET':
+      return 'Raw HTML only; RENDERED load did not fit the remaining URL budget (RENDER_BUDGET_UNAVAILABLE).';
+    case 'UNAVAILABLE':
+    case 'FAILED':
+      return 'Raw HTML only; JavaScript-injected values not evaluated.';
+    default:
+      return null;
+  }
+}
+
+/** Reason code when a RAW-vs-RENDERED comparison cannot run for a page. */
+export function renderGapCode(page) {
+  switch (page.render_state) {
+    case 'NOT_REQUIRED':
+      return 'RENDER_NOT_REQUIRED';
+    case 'BUDGET':
+      return 'RENDER_BUDGET_UNAVAILABLE';
+    case 'FAILED':
+      return 'RENDER_FAILED';
+    default:
+      return 'RENDER_UNAVAILABLE';
+  }
+}

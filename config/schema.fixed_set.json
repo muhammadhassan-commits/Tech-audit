@@ -1,0 +1,102 @@
+{
+  "_note": "PRD C-3.1 §3.1.0 — schema.fixed_set. Only these types are validated; everything else is inventoried (schema.inventory_only). Every entry is overridable.",
+  "types": [
+    {
+      "id": "S1",
+      "label": "Organization",
+      "match": ["Organization", "Corporation", "OnlineStore", "OnlineBusiness", "LocalBusiness", "NGO", "EducationalOrganization", "GovernmentOrganization", "MedicalOrganization", "SportsOrganization", "NewsMediaOrganization", "Airline", "Consortium", "FundingScheme", "LibrarySystem", "PerformingGroup", "ResearchOrganization", "WorkersUnion", "Project"],
+      "applies_to": ["homepage", "about"],
+      "id_convention": "{origin}/#organization",
+      "required": ["name", "url", "logo"],
+      "recommended": ["description", "sameAs", "contactPoint", "legalName", "foundingDate", "address"],
+      "tool_policy_required": true
+    },
+    {
+      "id": "S2",
+      "label": "WebSite",
+      "match": ["WebSite"],
+      "applies_to": ["homepage"],
+      "id_convention": "{origin}/#website",
+      "required": ["name", "url", "publisher"],
+      "ref_fields": { "publisher": "S1" },
+      "recommended": ["inLanguage", "description"]
+    },
+    {
+      "id": "S3",
+      "label": "WebPage",
+      "match": ["WebPage", "AboutPage", "CollectionPage", "ProfilePage", "ItemPage", "ContactPage", "SearchResultsPage", "CheckoutPage", "MedicalWebPage", "RealEstateListing"],
+      "applies_to": ["*"],
+      "id_convention": "{page_url}#webpage",
+      "required": ["@id", "url", "name", "isPartOf"],
+      "ref_fields": { "isPartOf": "S2" },
+      "recommended": ["description", "inLanguage", "datePublished", "dateModified", "about", "breadcrumb", "primaryImageOfPage"]
+    },
+    {
+      "id": "S4",
+      "label": "BreadcrumbList",
+      "match": ["BreadcrumbList"],
+      "applies_to": ["!homepage"],
+      "id_convention": "{page_url}#breadcrumb",
+      "required": ["itemListElement"],
+      "recommended": []
+    },
+    {
+      "id": "S5",
+      "label": "Article",
+      "match": ["Article", "BlogPosting", "NewsArticle", "TechArticle", "Report", "ScholarlyArticle"],
+      "applies_to": ["blog_article", "blog_template_alt"],
+      "id_convention": "{page_url}#article",
+      "required": ["headline", "datePublished", "author", "publisher"],
+      "ref_fields": { "publisher": "S1" },
+      "recommended": ["dateModified", "image", "mainEntityOfPage", "articleSection", "wordCount"]
+    },
+    {
+      "id": "S6",
+      "label": "Person",
+      "match": ["Person"],
+      "applies_to": ["author"],
+      "id_convention": "{origin}/#person-{slug}",
+      "required": ["name"],
+      "recommended": ["url", "jobTitle", "sameAs", "worksFor", "description"]
+    },
+    {
+      "id": "S7",
+      "label": "Product",
+      "match": ["Product", "ProductGroup", "IndividualProduct", "ProductModel"],
+      "applies_to": ["product_main"],
+      "id_convention": "{page_url}#product",
+      "required": ["name", "offers|review|aggregateRating"],
+      "recommended": ["image", "description", "sku", "brand"]
+    },
+    {
+      "id": "S8",
+      "label": "Offer",
+      "match": ["Offer", "AggregateOffer"],
+      "applies_to": ["product_main", "pricing"],
+      "id_convention": null,
+      "required": ["price|priceSpecification.price|lowPrice", "priceCurrency|priceSpecification.priceCurrency"],
+      "recommended": ["availability", "priceValidUntil", "url"]
+    },
+    {
+      "id": "S9",
+      "label": "Service",
+      "match": ["Service", "FinancialProduct", "BroadcastService", "CableOrSatelliteService", "GovernmentService", "TaxiService", "WebAPI"],
+      "applies_to": ["service_main", "service_secondary"],
+      "id_convention": "{page_url}#service",
+      "required": ["name", "provider"],
+      "ref_fields": { "provider": "S1" },
+      "recommended": ["serviceType", "areaServed", "description", "offers"]
+    },
+    {
+      "id": "S10",
+      "label": "FAQPage",
+      "match": ["FAQPage"],
+      "applies_to": [],
+      "id_convention": "{page_url}#faq",
+      "required": ["mainEntity"],
+      "recommended": [],
+      "faq": true
+    }
+  ],
+  "inventory_only": ["LocalBusiness", "Event", "Recipe", "HowTo", "VideoObject", "JobPosting", "Course", "SoftwareApplication", "QAPage", "ItemList", "SearchAction"]
+}
