@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # src/net/render.js probes a list of known paths; this is the one it looks for first.
 ENV AUDIT_CHROME_PATH=/usr/bin/chromium
+# Chromium will not start as root without --no-sandbox, and Docker's default 64 MB /dev/shm makes
+# it crash on real pages. These are container facts, not preferences, so they are set here rather
+# than in the code, which keeps the browser's own sandbox on a normal local run.
+ENV AUDIT_CHROME_ARGS=--no-sandbox,--disable-dev-shm-usage
 ENV NODE_ENV=production
 
 WORKDIR /app
@@ -28,7 +32,10 @@ COPY . .
 # on when it fails to install. That would produce an image that boots, serves, audits — and
 # silently skips the RENDERED profile on every page. Fail the build here instead, where it is
 # visible, rather than shipping an engine that quietly reports less than it should.
-RUN node -e "import('playwright-core').then(()=>console.log('playwright-core: ok')).catch(e=>{console.error('playwright-core missing:',e.message);process.exit(1)})"  && node -e "const fs=require('fs');const p=process.env.AUDIT_CHROME_PATH;if(!fs.existsSync(p)){console.error('no browser at '+p);process.exit(1)}console.log('chromium: '+p)"  && node -e "import('./src/net/render.js').then(m=>{const b=m.findBrowser();if(!b){console.error('the engine cannot find a browser');process.exit(1)}console.log('engine resolves browser: '+b)})"
+# Checking the file exists is not enough: a present binary that cannot start is the same outcome
+# as a missing one, and both are invisible until a report comes back short. So the build launches
+# the browser through the engine's own code path, with the same flags production will use.
+RUN node scripts/check-render.mjs
 
 # Reports are written here. Mount a persistent disk at this path to keep them across restarts;
 # without one they live only as long as the container, which is fine if you publish to the viewer.
@@ -38,7 +45,10 @@ VOLUME ["/app/runs"]
 EXPOSE 4317
 ENV PORT=4317
 
-# One audit holds a Chromium and parses several MB of HTML; the default heap is tight for that.
+# One audit holds a Chromium and parses several MB of HTML. On a 2 GB plan 1024 is comfortable;
+# on a 512 MB free plan set NODE_OPTIONS=--max-old-space-size=320 in the dashboard, which makes
+# Node collect earlier instead of being killed. It is a real constraint, not a tuning preference:
+# Node plus a Chromium rendering ten pages does not comfortably fit in 512 MB.
 ENV NODE_OPTIONS=--max-old-space-size=1024
 
 CMD ["node", "src/server.js"]

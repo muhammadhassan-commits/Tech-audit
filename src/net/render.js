@@ -47,7 +47,16 @@ export class Renderer {
     }
     try {
       const { chromium } = await import('playwright-core');
-      this.browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--disable-gpu', '--no-first-run'] });
+      // Containers need two more flags, and neither is safe to assume locally. Chromium refuses
+      // to start as root without --no-sandbox, and Docker's default 64 MB /dev/shm makes it crash
+      // on real pages without --disable-dev-shm-usage. AUDIT_CHROME_ARGS supplies them where they
+      // are needed, so a local run keeps the browser's own sandbox.
+      const extra = (process.env.AUDIT_CHROME_ARGS || '').split(',').map((a) => a.trim()).filter(Boolean);
+      this.browser = await chromium.launch({
+        executablePath: exe,
+        headless: true,
+        args: ['--disable-gpu', '--no-first-run', ...extra],
+      });
       this.available = true;
     } catch (e) {
       this.available = false;

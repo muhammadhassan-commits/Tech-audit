@@ -153,6 +153,45 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') pop.hidden = true;
 });
 
+/**
+ * C-4.1 falls back to lab data when an origin has too little traffic for field data. The numbers
+ * are already in the report, but buried in Measurements, so the card reads as if nothing was
+ * measured at all. Surface them — clearly marked, because lab data is diagnostic and must never
+ * be read as a Core Web Vitals verdict (R-4.1-9 / F-4.1-1).
+ */
+function labFallback(r) {
+  if (r.check_id !== 'C-4.1' || r.status !== 'NOT_TESTABLE' || !r.metrics) return null;
+  const entries = Object.entries(r.metrics).filter(([k, v]) => k.endsWith('_lab_diagnostics_only') && v);
+  if (!entries.length) return null;
+
+  const wrap = el('div', 'lab-fallback');
+  wrap.appendChild(el('div', 'lab-head', 'Lab data (no real-user data for this site)'));
+
+  const ms = (n) => (n == null ? '—' : n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${Math.round(n)} ms`);
+  for (const [key, lab] of entries) {
+    const ff = key.replace('_lab_diagnostics_only', '');
+    const row = el('div', 'lab-row');
+    row.appendChild(el('span', 'lab-ff', ff));
+    const stat = (label, value) => {
+      const s = el('span', 'lab-stat');
+      s.appendChild(el('span', 'lab-label', label));
+      s.appendChild(el('span', 'lab-value', value));
+      return s;
+    };
+    row.appendChild(stat('LCP', ms(lab.lcp_ms)));
+    row.appendChild(stat('CLS', lab.cls == null ? '—' : lab.cls.toFixed(3)));
+    row.appendChild(stat('TBT', ms(lab.total_blocking_time_ms)));
+    if (lab.speed_index_ms != null) row.appendChild(stat('Speed Index', ms(lab.speed_index_ms)));
+    if (lab.performance_score_lab_only != null) row.appendChild(stat('Perf', Math.round(lab.performance_score_lab_only * 100)));
+    wrap.appendChild(row);
+  }
+
+  // Two lines, deliberately: what this is, and what it is not.
+  wrap.appendChild(el('div', 'lab-note', 'One synthetic run from a single location on a simulated device — not real visitors.'));
+  wrap.appendChild(el('div', 'lab-note', 'Diagnostic only: it does not decide whether this site passes Core Web Vitals, so it is not scored.'));
+  return wrap;
+}
+
 /** Reference button for any factor or child item. */
 function refBtn({ check_id, checkpoint, reason_code, sources, url, note }) {
   const b = el('button', 'ref-btn', 'Reference');
@@ -636,6 +675,8 @@ function renderResult(r) {
     rem.appendChild(el('div', 'muted', `Confidence: ${r.remediation.confidence}. Values shown are observed on the page; placeholders must be supplied.`));
     card.appendChild(rem);
   }
+  const lab = labFallback(r);
+  if (lab) card.appendChild(lab);
   if (r.evidence?.length) {
     const d = el('details', 'evidence');
     d.appendChild(el('summary', null, `Evidence (${r.evidence.length})`));

@@ -243,6 +243,25 @@ a { color: var(--accent); }
   .bar-row .count { grid-area: count; }
 }
 
+/* Lab-data fallback (C-4.1 with no field data).
+   Deliberately styled as a neutral diagnostic panel, not a scored result: no pass/warn/fail
+   colour, muted labels, and the two-line disclaimer attached to it rather than hidden in a
+   tooltip. A reader must not be able to mistake these numbers for a Core Web Vitals verdict. */
+.lab-fallback { margin: 8px 12px 10px; padding: 10px 12px; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; }
+.lab-head { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.lab-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-bottom: 6px; }
+.lab-ff { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; color: var(--muted); min-width: 62px; }
+.lab-stat { display: inline-flex; align-items: baseline; gap: 5px; }
+.lab-label { font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); }
+.lab-value { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.lab-note { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.lab-note + .lab-note { margin-top: 1px; }
+@media (max-width: 560px) {
+  .lab-fallback { margin: 8px 12px; }
+  .lab-row { gap: 4px 12px; }
+  .lab-ff { min-width: 100%; }
+}
+
 /* ── Print / PDF export ───────────────────────────────────────────────────
    A report a CEO can print or save as PDF: light, flat, every panel open,
    no interactive chrome, and nothing clipped mid-finding. */
