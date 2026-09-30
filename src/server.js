@@ -9,7 +9,8 @@ import { runAudit } from './engine/pipeline.js';
 import { getRegister } from './sources/register.js';
 import { FACTORS, SECTIONS } from './engine/catalog.js';
 import { CHECKPOINTS } from './engine/result.js';
-import { PROJECT_ROOT } from './config.js';
+import { PROJECT_ROOT, TOOL_VERSION } from './config.js';
+import { findBrowser } from './net/render.js';
 
 const UI_DIR = path.join(PROJECT_ROOT, 'public');
 const RUNS_DIR = path.join(PROJECT_ROOT, 'runs');
@@ -57,6 +58,25 @@ export function createServer() {
         });
       }
       // Per-item lookup: /api/source?check=C-1.5&checkpoint=C-1.5-g&reason=CANONICAL_TO_REDIRECT
+      // Deployment health check. It reports what the host actually gives this process, because
+      // the two things that silently degrade an audit — no browser, no keys — are invisible until
+      // a report comes back wrong. A platform probe only reads the status code; a human reads the
+      // body and can see at a glance whether rendering is really available here.
+      if (url.pathname === '/health') {
+        const browser = findBrowser() || null;
+        return send(res, 200, {
+          ok: true,
+          tool_version: TOOL_VERSION,
+          browser_path: browser,
+          render_available: Boolean(browser),
+          keys: {
+            google: Boolean(process.env.GOOGLE_API_KEY),
+            anthropic: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
+          },
+          saved_reports: fs.existsSync(RUNS_DIR) ? fs.readdirSync(RUNS_DIR).filter((f) => f.endsWith('.json')).length : 0,
+          active_runs: [...runs.values()].filter((r) => r.status === 'running').length,
+        }, { 'cache-control': 'no-store' });
+      }
       if (url.pathname === '/api/source') {
         const reg = getRegister();
         const checkId = url.searchParams.get('check');

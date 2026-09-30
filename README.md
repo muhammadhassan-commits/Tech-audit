@@ -235,6 +235,63 @@ occupy one of the ten slots. Both are deterministic and commented in place.
 
 ---
 
+## Hosting it, so other people can run audits
+
+The dashboard at `localhost:4317` is the whole tool: URL form, options, live progress, full
+rendering. Hosting it elsewhere means giving another machine the three things it needs, and every
+one of them rules out a serverless platform:
+
+| What an audit needs | Measured | Why serverless fails |
+| --- | --- | --- |
+| A process that lives for the whole run | 425–575 s | Netlify functions cap at 10 s (26 s max) |
+| A real Chromium for the RENDERED profile | every page | No browser in a function runtime |
+| A held-open connection for live progress | whole run | No persistent connections |
+| Somewhere to write `runs/` | ~1.5 MB per report | Read-only filesystem |
+
+So the engine runs as an ordinary long-lived container. `Dockerfile` and `render.yaml` in this
+repository do that on [Render](https://render.com); the same image runs on Railway, Fly.io, or any
+VPS, because it is just Node plus Chromium.
+
+### Deploying to Render
+
+1. Push this repository to GitHub.
+2. Render → **New** → **Blueprint** → pick the repository. It reads `render.yaml`.
+3. It prompts for `GOOGLE_API_KEY` and `ANTHROPIC_API_KEY`. They are stored encrypted, never in
+   this repository — which is why `render.yaml` marks them `sync: false`.
+4. Deploy. The dashboard is at the service URL, identical to `localhost:4317`.
+
+**Use the starter plan, not free.** Free gives 512 MB; Node plus a Chromium rendering ten pages
+does not fit, and the container is killed part-way through an audit. The blueprint also mounts a
+1 GB disk at `/app/runs`, without which every saved report is lost on each deploy.
+
+### Checking a deployment is healthy
+
+`GET /health` reports the two things that silently degrade an audit — a missing browser and
+missing keys — because neither is visible until a report comes back wrong:
+
+```json
+{
+  "ok": true,
+  "tool_version": "1.2.0",
+  "browser_path": "/usr/bin/chromium",
+  "render_available": true,
+  "keys": { "google": true, "anthropic": true },
+  "saved_reports": 4,
+  "active_runs": 0
+}
+```
+
+If `render_available` is `false`, the engine is running but every JavaScript-injected value is
+invisible to it. The Docker build asserts the browser is present precisely so this cannot happen
+quietly — but check it after any change to the image.
+
+### Free-tier and cold starts
+
+A host that sleeps an idle service will cold-start the next request. That is fine for the
+dashboard, but an audit started immediately after a cold start spends its first seconds waiting
+for Chromium to come up, inside the same 30-minute run budget. Keep the service warm, or start
+audits from a page you have already loaded.
+
 ## Layout
 
 ```
@@ -252,6 +309,8 @@ src/
 public/                  dashboard
 test/                    unit tests + end-to-end gate tests against a local fixture site
 runs/                    saved reports, one JSON per run
+Dockerfile              Node + Chromium image; asserts the browser is present at build time
+render.yaml             Render blueprint: starter plan, /health check, 1 GB disk for runs/
 ```
 
 Report shape is Appendix B verbatim: `run`, `target`, `discovery`, `sitemap_access`, `sample`,

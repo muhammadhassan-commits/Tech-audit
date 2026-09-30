@@ -73,13 +73,17 @@ export class LlmJudge {
     this.ctx = ctx;
     this.calls = 0;
     this.callsByCheck = new Map();
+    this.timeExhausted = false;
     this.disabledReason = null;
     this.client = null;
     if (!cfg.cap.llm_judge) this.disabledReason = 'cap.llm_judge = false';
     else if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) this.disabledReason = 'No Anthropic credentials in the environment (ANTHROPIC_API_KEY).';
     else {
       try {
-        this.client = new Anthropic();
+        this.client = new Anthropic({
+          timeout: cfg.llm.request_timeout_ms,
+          maxRetries: cfg.llm.max_retries,
+        });
       } catch (e) {
         this.disabledReason = `SDK init failed: ${e.message}`;
       }
@@ -91,6 +95,17 @@ export class LlmJudge {
   }
 
   budgetLeft() {
+    // Time is a budget too. A call started with less time left than it is allowed to take would
+    // push the run past run.max_minutes and abort it with BUDGET_EXHAUSTED, losing the whole
+    // report. Stopping here instead leaves the remaining sub-scores NOT_TESTABLE, which the
+    // scoring rules already handle (excluded from the score; R-SCORE-6 suppresses if over 25%).
+    if (this.ctx?.deadline && Date.now() + this.cfg.llm.request_timeout_ms > this.ctx.deadline) {
+      if (!this.timeExhausted) {
+        this.timeExhausted = true;
+        this.ctx.emit?.('llm_budget', { reason: 'RUN_TIME_BUDGET', calls_made: this.calls });
+      }
+      return 0;
+    }
     return this.cfg.llm.max_calls_per_run - this.calls;
   }
 

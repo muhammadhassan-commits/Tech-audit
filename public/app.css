@@ -72,6 +72,7 @@ main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
 /* Report top grid */
 .grid-top { display: grid; grid-template-columns: minmax(260px, 340px) minmax(280px, 1fr) minmax(280px, 1fr); gap: 16px; }
 @media (max-width: 1050px) { .grid-top { grid-template-columns: 1fr; } }
+
 .score-card { text-align: center; }
 .score-ring { position: relative; width: 190px; margin: 6px auto 4px; }
 .score-ring svg { width: 100%; transform: rotate(-90deg); }
@@ -216,6 +217,32 @@ a { color: var(--accent); }
 .report-actions button { font-size: 12.5px; padding: 6px 12px; }
 #report-stamp { font-size: 12px; }
 
+/* Phone. A published report is opened from a link, often on a phone, so the factor header — id,
+   name, status, Reference, score — has to stop being a five-column grid and wrap instead. Without
+   this the Reference button and the score sit past the right edge and the whole page scrolls
+   sideways. The wide tables keep scrolling inside their own wrapper, which already works. */
+@media (max-width: 560px) {
+  main { padding: 16px 16px 48px; }
+  .topbar { padding: 12px 16px; gap: 10px; }
+  .factor > header { display: flex; flex-wrap: wrap; gap: 7px 10px; padding: 11px 14px; }
+  .factor .name { flex: 1 1 100%; order: -1; }
+  .factor .id { flex: none; }
+  .factor-score { width: auto; margin-left: auto; }
+  .cat > header { flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+  .factor-body, .result .summary, .sub-list { padding-left: 12px; padding-right: 12px; }
+  .sub-list .sub-text { min-width: 0; }
+  .score-value { font-size: 36px; }
+  /* Let the wide table take its natural width and scroll inside its wrapper. Squeezed to
+     290px it renders a URL one character per line, which is worse than a sideways swipe. */
+  .table-wrap table { min-width: 560px; }
+  /* Reason codes are long. A 116px ellipsised column turns them all into "QUESTIONS_NOT_…",
+     so on a phone the label gets its own line above the bar instead. */
+  .bar-row { grid-template-columns: 1fr 44px; grid-template-areas: "label label" "track count"; row-gap: 3px; }
+  .bar-row .label { grid-area: label; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .bar-track { grid-area: track; }
+  .bar-row .count { grid-area: count; }
+}
+
 /* ── Print / PDF export ───────────────────────────────────────────────────
    A report a CEO can print or save as PDF: light, flat, every panel open,
    no interactive chrome, and nothing clipped mid-finding. */
@@ -226,7 +253,8 @@ a { color: var(--accent); }
   }
   body { background: #fff; color: #111820; font-size: 10.5pt; }
   .topbar { position: static; border-bottom: 2px solid #111820; padding: 0 0 10px; }
-  #run-form, #opts-btn, .options, #progress, #idle, .dist-toggle, .ref-btn, .toast, .ref-pop { display: none !important; }
+  #run-form, #opts-btn, .options, #progress, #idle, .dist-toggle, .ref-btn, .toast, .ref-pop,
+  .report-actions button { display: none !important; }
   main { padding: 0; max-width: none; }
   .panel, .cat-body, .factor, .result { border-color: var(--line); break-inside: avoid; }
   .grid-top { grid-template-columns: 1fr 1fr; gap: 10px; }

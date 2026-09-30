@@ -24,7 +24,11 @@ try {
   }
 }
 
-export const TOOL_VERSION = '1.1.0';
+// Bump this whenever a change can alter a verdict, a score or a citation. A report carries the
+// version that produced it, so a stale report is identifiable instead of silently outranked by
+// newer logic. 1.2.0: verdict split (BLOCKED vs CRITICAL_ISSUES), sitemap canonical-host rule,
+// trailing-slash variant check, per-source citation notes.
+export const TOOL_VERSION = '1.2.0';
 export const RUBRIC_VERSION = 's6-2026-09';
 export const THRESHOLD_SET_VERSION = '2026-09';
 
@@ -106,6 +110,12 @@ export const DEFAULTS = {
     max_chars: 12000,
     // Share of the run budget reserved per rubric, so one check cannot consume it all.
     budget_share: { 'C-6.2': 0.35, 'C-6.3': 0.1, 'C-6.4': 0.35, 'C-6.5': 0.2 },
+    // A call budget alone does not bound a run: one request that never answers stalls the pipeline
+    // past run.max_minutes, because the deadline is only tested between operations. So each call
+    // gets a wall-clock limit, and the SDK is told how many times it may retry — its own defaults
+    // are a 10-minute timeout and 2 retries, which is 30 minutes of silence for a single rubric.
+    request_timeout_ms: 120000,
+    max_retries: 1,
   },
   run: { max_minutes: 30 },
   // Section weights — R-SCORE-4

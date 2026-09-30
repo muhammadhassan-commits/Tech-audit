@@ -152,3 +152,40 @@ test('every emitted result satisfies the output contract', async () => {
     server.close();
   }
 });
+
+// A call budget alone does not bound a run. The Anthropic SDK's own defaults are a 10-minute
+// timeout and 2 retries, so one unresponsive request can outlast run.max_minutes — and the run
+// deadline is only tested between operations, so the pipeline cannot interrupt it. The judge must
+// therefore refuse to start a call it does not have time to finish.
+test('llm judge: stops spending when the run deadline is closer than one call timeout', async () => {
+  const { LlmJudge } = await import('../src/llm/judge.js');
+  const cfg = {
+    cap: { llm_judge: true },
+    llm: { max_calls_per_run: 20, model: 'test', max_chars: 1000, request_timeout_ms: 120000, max_retries: 1, budget_share: { 'C-6.2': 0.5 } },
+  };
+  // A key is needed only so the judge builds a client; no request is made in this test.
+  const had = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'sk-ant-test-not-used';
+  try {
+    const emitted = [];
+    const emit = (type, data) => emitted.push({ type, ...data });
+
+    const roomy = new LlmJudge(cfg, { deadline: Date.now() + 10 * 60000, emit });
+    assert.equal(roomy.budgetLeft(), 20, 'with 10 minutes left, the full call budget is available');
+    assert.ok(roomy.budgetLeftFor('C-6.2') > 0, 'and the per-check reservation is spendable');
+
+    const tight = new LlmJudge(cfg, { deadline: Date.now() + 30000, emit });
+    assert.equal(tight.budgetLeft(), 0, 'with 30s left and a 120s call timeout, nothing may be spent');
+    assert.equal(tight.budgetLeftFor('C-6.2'), 0, 'the per-check reservation is withheld too');
+    assert.ok(emitted.some((e) => e.type === 'llm_budget' && e.reason === 'RUN_TIME_BUDGET'),
+      'the operator is told why the rubric stopped, once');
+    assert.equal(emitted.filter((e) => e.type === 'llm_budget').length, 1, 'and only once');
+
+    // No deadline on the context must not disable the judge.
+    const unbounded = new LlmJudge(cfg, { emit });
+    assert.equal(unbounded.budgetLeft(), 20, 'a context without a deadline spends its call budget');
+  } finally {
+    if (had === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = had;
+  }
+});

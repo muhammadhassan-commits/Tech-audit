@@ -83,6 +83,8 @@ export async function runAudit(seed, options = {}, onEvent = () => {}) {
         /* progress sinks never break a run */
       }
     },
+    // Exposed so the LLM judge can stop before a call would overrun it (F-RUN-7).
+    deadline,
     checkDeadline() {
       if (Date.now() > deadline) throw new RunAbort('BUDGET_EXHAUSTED'); // F-RUN-7
       if (this.abortCode) throw new RunAbort(this.abortCode);

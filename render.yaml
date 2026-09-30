@@ -1,0 +1,30 @@
+# Deployment for Render. The engine is a long-running process, not a function: one audit takes
+# 425-575s (measured), holds a Chromium, and streams progress over an open connection. Nothing
+# about that fits a serverless platform, which is why the published viewer is a separate project.
+services:
+  - type: web
+    name: technical-audit-engine
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    # The free plan gives 512 MB. Node plus a Chromium rendering ten pages does not fit in it and
+    # the container is killed mid-audit, so starter (2 GB) is the smallest plan that actually works.
+    region: frankfurt
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: PORT
+        value: 4317
+      - key: AUDIT_CHROME_PATH
+        value: /usr/bin/chromium
+      # sync: false means Render prompts for the value and stores it encrypted. The keys are never
+      # written into this file, so this repository stays safe to make public.
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      # Reports are written to runs/. Without a disk they vanish on every deploy and restart.
+      name: audit-runs
+      mountPath: /app/runs
+      sizeGB: 1
