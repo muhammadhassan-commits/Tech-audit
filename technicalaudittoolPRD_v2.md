@@ -3829,7 +3829,7 @@ they cannot raise or lower a percentage — and the report states why.
 
 | Id | Item | Section | What is missing |
 | :---- | :---- | :---- | :---- |
-| X-1.8 | Googlebot Access (using SERP) | 1 | No conditions, and no SERP data source (`capabilities.serp_api = false`). Google publishes no search API, so a third-party SERP provider or Search Console access would be required. A `site:` query is in any case a weak proxy for index coverage. |
+| ~~X-1.8~~ | ~~Googlebot Access (using SERP)~~ | 1 | **Now specified — see ADD-9.** |
 | X-5.3b | LLms-full.txt | 5 | No conditions, and no registered specification for the file. |
 | X-5.5 | Common Crawl presence | 5 | No conditions, and no threshold for what presence or absence would mean. |
 
@@ -3953,6 +3953,80 @@ from severity and yield 30-40 %. It is registered as a fixed per-check value.
 
 `sitemap.require_canonical_host` is removed from §2 configuration; the rule it governed no longer
 exists.
+
+
+---
+
+## **ADD-9 — X-1.8 Googlebot Access (using SERP), specified**
+
+X-1.8 was listed in the checklist and never evaluated: v2.0 defined no conditions for it, and there
+was no SERP data to evaluate. Both gaps are now closed. The operator supplied a SERP provider, and
+the conditions below are deliberately the narrowest the evidence supports.
+
+### **ADD-9.1 — What the check is for**
+
+Every other factor in Section 1 establishes that Google **can** reach the site: robots.txt permits
+it, pages return 200, nothing carries noindex. X-1.8 asks whether Google **did**. Those are
+different questions, and every precondition can pass while the site is absent from the index.
+
+### **ADD-9.2 — Method**
+
+One request per run: a `site:<canonical-host>` query through the configured SERP provider. Results
+whose host is the audited host, or a subdomain of it, are counted. Nothing else about the result set
+is read.
+
+### **ADD-9.3 — What this evidence can and cannot carry**
+
+Google documents the `site:` operator and states that its result counts are **estimates**. A query
+returns a sample, not an index report. So:
+
+* it **can** separate "Google holds pages from this domain" from "Google holds none";
+* it **cannot** measure coverage, or identify which pages are missing.
+
+Only the binary outcome is scored. The caveat is attached to every finding, and it names Google
+Search Console as the authoritative source — which only the site owner can authorise.
+
+### **ADD-9.4 — Conditions**
+
+| Checkpoint | Condition | Status | Severity | reason\_code |
+| :---- | :---- | :---- | :---- | :---- |
+| X-1.8-a | At least one organic result belongs to the canonical host | PASS | — | — |
+| X-1.8-b | No organic result belongs to the canonical host | FAIL | CRITICAL | SITE\_NOT\_IN\_INDEX |
+| X-1.8-c | The lookup could not be completed | NOT\_TESTABLE | — | SERP\_LOOKUP\_UNAVAILABLE |
+
+**X-1.8-b is CRITICAL** because a site absent from the index cannot rank at all, whatever else is
+configured correctly. The severity is tool policy; the inference itself rests on Google's own
+documentation of the operator. It cross-references C-1.1, C-1.6 and C-1.7, which are where the
+cause usually lies.
+
+**X-1.8-c covers** a missing or rejected key, exhausted quota, a timeout, and `cap.serp_api = false`.
+A lookup the tool could not complete says nothing about the site, so it is excluded from the score
+rather than reported as absence.
+
+### **ADD-9.5 — Configuration**
+
+* **R-CFG-5 — `cap.serp_api`** (default **true**). With no key configured the check reports
+  NOT\_TESTABLE rather than guessing, and `capabilities.serp_api` in the output contract now reports
+  what the run could actually use instead of being hard-coded false.
+* **R-CFG-6 — `serp.country`** (default `US`) and **`serp.timeout_ms`** (default 45 000).
+  The country must be an upper-case ISO-3166 code; the provider rejects lower case with a validation
+  error.
+
+### **ADD-9.6 — Sources added to the register**
+
+| Ref | Source | Tier | What it carries |
+| :---- | :---- | :---- | :---- |
+| GSO | Google — Refine web searches (search operators) | VENDOR\_DOC | Documents `site:`, and that counts are estimates |
+| GSC | Google Search Central — Get started with Search Console | VENDOR\_DOC | The authoritative coverage report, cited wherever the SERP sample stands in for it |
+| CLR | Cloro — SERP API | data provider | The route through which the query runs. A data source, not an authority |
+
+CLR is registered as a provider rather than a documentary source, so it cannot carry a finding on
+its own — which is why X-1.8-b rests on GSO and GSC.
+
+### **ADD-9.7 — Still unspecified**
+
+**X-5.3b (LLms-full.txt)** and **X-5.5 (Common Crawl presence)** remain listed, displayed and never
+scored. Neither has conditions or a registered source, and ADD-7's requirement stands for both.
 
 [^1]:  0-9a-f
 

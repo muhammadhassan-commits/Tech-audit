@@ -262,6 +262,28 @@ a { color: var(--accent); }
   .lab-ff { min-width: 100%; }
 }
 
+/* How to fix.
+   Two visually distinct states, because the difference matters: a fix generated from the page can
+   be pasted, and general advice cannot. GUIDANCE is deliberately quieter than EXACT. */
+.fixbox { margin: 8px 12px 10px; padding: 11px 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.fixbox.EXACT { border-left: 3px solid var(--pass); }
+.fixbox.GUIDANCE { border-left: 3px solid var(--accent); }
+.fix-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.fix-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.fix-kind { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.fix-kind.EXACT { background: color-mix(in srgb, var(--pass) 16%, transparent); color: var(--pass); }
+.fix-kind.GUIDANCE { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.fix-why { margin: 0 0 6px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.fix-how { margin: 0; font-size: 13.5px; line-height: 1.55; }
+.fix-code-label { margin-top: 9px; font-size: 11.5px; color: var(--muted); }
+.fix-code { margin: 5px 0 0; padding: 9px 11px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font-family: var(--mono); font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+.fix-note { margin-top: 7px; font-size: 11.5px; color: var(--muted); }
+@media (max-width: 560px) { .fixbox { margin: 8px 12px; } }
+
+/* Where a finding came from. Kept, but out of the way: traceability for whoever needs it, silence
+   for whoever does not. */
+.rule-ref { font-size: 10.5px; color: var(--muted); font-family: var(--mono); padding: 0 12px 6px; opacity: 0.75; }
+
 /* ── Print / PDF export ───────────────────────────────────────────────────
    A report a CEO can print or save as PDF: light, flat, every panel open,
    no interactive chrome, and nothing clipped mid-finding. */

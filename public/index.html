@@ -12,49 +12,38 @@
     <span class="mark" aria-hidden="true"></span>
     <div>
       <h1>Initial Technical SEO&nbsp;+ LLM Visibility Audit</h1>
-      <p class="sub">Sequential pipeline · execution begins at <strong>1. Crawl &amp; Indexing › robots.txt</strong></p>
+      <p class="sub">How a search engine and an AI assistant read your site</p>
     </div>
   </div>
   <form id="run-form" autocomplete="off">
-    <input id="seed" name="seed" type="text" placeholder="example.com" aria-label="Website to audit" required>
+    <input id="seed" name="seed" type="text" placeholder="example.com" aria-label="Website to audit">
     <button id="run-btn" type="submit">Run audit</button>
     <button id="opts-btn" type="button" class="ghost" aria-expanded="false">Options</button>
   </form>
 </header>
 
 <section id="options" class="options" hidden>
-  <label><input type="checkbox" id="opt-render" checked> Render JavaScript <small>headless Chromium for the homepage and client-rendered pages</small></label>
-  <label><input type="checkbox" id="opt-llm" checked> LLM rubric <small>Section 6 sub-scores; deterministic gates always run</small></label>
-  <label><input type="checkbox" id="opt-ua"> UA-variant probing <small>opt-in; off by default (R-FETCH-7)</small></label>
-  <label><input type="checkbox" id="opt-staging"> Staging environment <small>downgrades expected blocks and noindex</small></label>
-  <label class="wide">Gate mode
-    <select id="opt-gate">
-      <option value="strict">Strict — any robots.txt failure halts every factor</option>
-      <option value="prd">PRD — control-file checks continue (F-RUN-6 / F-RUN-8)</option>
-    </select>
+  <label><input type="checkbox" id="opt-render" checked> Load pages like a real browser <small>slower, but sees content that only appears after scripts run</small></label>
+  <label><input type="checkbox" id="opt-llm" checked> Score AI readability <small>how easily an AI assistant can quote and use your pages</small></label>
+  <label class="wide">Check specific pages <small>one URL per line. Leave the box above empty to check only these. Up to 10 pages.</small>
+    <textarea id="opt-urls" rows="3" placeholder="https://example.com/pricing"></textarea>
   </label>
-  <label class="wide">Specific URLs to audit <small>one per line; honoured verbatim, still subject to the 10-page cap</small>
-    <textarea id="opt-urls" rows="2" placeholder="https://example.com/pricing"></textarea>
-  </label>
-  <label><input type="checkbox" id="opt-only-urls"> Audit only these URLs <small>skip discovery and sample exactly the URLs above</small></label>
 </section>
 
 <main id="main">
   <section id="idle" class="panel idle">
-    <div id="recent" hidden>
-      <h2>Previous audits</h2>
-      <ul id="recent-list" class="recent-list"></ul>
-    </div>
-    <h2>Ready</h2>
-    <p>Enter a domain to start. The engine resolves the origin, then runs <strong>robots.txt</strong> first as a blocking gate: if that check fails, is incomplete or errors, no further factor is evaluated.</p>
+    <h2>Check a website</h2>
+    <p>Enter a domain and press <strong>Run audit</strong>. To check particular pages instead, open
+    <strong>Options</strong> and paste their URLs. A full check takes around 7&ndash;10 minutes.</p>
     <ol class="pipeline-preview">
-      <li><span>P0</span> Target intake &amp; normalisation</li>
-      <li><span>P1</span> robots.txt — <em>gate</em></li>
-      <li><span>P2</span> Page discovery &amp; sampling (1–10 pages)</li>
-      <li><span>P3</span> Per-page acquisition (raw + rendered)</li>
-      <li><span>P4–P6</span> Site, page and cross-page checks</li>
-      <li><span>P7</span> Scoring &amp; report</li>
+      <li><span>1</span> Read robots.txt — the file that tells crawlers what they may visit</li>
+      <li><span>2</span> Pick up to 10 pages that represent the site</li>
+      <li><span>3</span> Fetch each one, twice: as sent, and as a browser renders it</li>
+      <li><span>4</span> Run every check</li>
+      <li><span>5</span> Score the result and write the report</li>
     </ol>
+    <p class="muted">The first step is a gate. If robots.txt blocks crawling or cannot be read,
+    nothing else is checked &mdash; because nothing else would be reliable.</p>
   </section>
 
   <section id="progress" class="panel" hidden>

@@ -39,6 +39,9 @@ export const DEFAULTS = {
     psi_api: true,
     crux_api: true,
     gsc_api: false,
+    // Index presence via a SERP provider (X-1.8). On only when a key is configured: without one
+    // the check reports NOT_TESTABLE rather than guessing.
+    serp_api: true,
     llm_judge: true,
     ua_probe: false,
     commoncrawl: true, // discovery only (B-A1-4)
@@ -137,6 +140,9 @@ export const DEFAULTS = {
   //  prd    — PRD F-RUN-6/F-RUN-8: control-file checks (C-1.1, C-1.2, C-5.3) still run.
   gate: { robots_mode: 'strict' },
   // API keys, read from the environment only — never written to a report, a log or the UI.
+  // SERP lookups (X-1.8). One request per run: a site: query against the canonical host.
+  // country must be an upper-case ISO-3166 code; the provider rejects lower case.
+  serp: { country: 'US', timeout_ms: 45000 },
   keys: {
     google_api_key: process.env.GOOGLE_API_KEY || process.env.PSI_API_KEY || process.env.CRUX_API_KEY || '',
     cloro_api_key: process.env.CLORO_API_KEY || '',

@@ -87,11 +87,9 @@ export function createServer() {
         // set aside), condition, specificity, reference_url, threshold_by, unsourced_note.
         return send(res, 200, { check_id: checkId, factor, ...resolved }, { 'cache-control': 'public, max-age=60' });
       }
-      if (url.pathname === '/api/runs' && req.method === 'GET') {
-        const list = [...runs.values()].map((r) => ({ run_id: r.run_id, seed: r.seed, status: r.status, started: r.started, verdict: r.report?.scores?.verdict ?? null }));
-        const saved = fs.readdirSync(RUNS_DIR).filter((f) => f.endsWith('.json')).map((f) => ({ run_id: f.replace(/\.json$/, ''), file: f, saved: true }));
-        return send(res, 200, { active: list, saved });
-      }
+      // /api/runs is deliberately absent. It listed every audit anyone had ever run, which on a
+      // public deployment discloses other people's sites to any visitor. A report is reachable
+      // only through its own run id, which is a UUID handed to whoever started the run.
       if (url.pathname === '/api/audit' && req.method === 'POST') {
         const body = await readJson(req);
         const seed = String(body.seed || '').trim();

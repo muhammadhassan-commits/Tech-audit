@@ -2960,6 +2960,33 @@
   "condition": "A declared sitemap is unavailable on every variant, while another declared or standard-location parent sitemap returns 200",
   "reason_text": "SITEMAP_PARTIALLY_BROKEN"
  },
+ "X-1.8-a": {
+  "check_id": "X-1.8",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": null,
+  "condition": "A site: query for the canonical host returns at least one organic result belonging to that host",
+  "reason_text": "—"
+ },
+ "X-1.8-b": {
+  "check_id": "X-1.8",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "CRITICAL",
+  "reason_code": "SITE_NOT_IN_INDEX",
+  "condition": "A site: query for the canonical host returns no organic results belonging to that host",
+  "reason_text": "SITE_NOT_IN_INDEX"
+ },
+ "X-1.8-c": {
+  "check_id": "X-1.8",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "SERP_LOOKUP_UNAVAILABLE",
+  "condition": "The SERP lookup could not be completed: no key, key rejected, quota exhausted, timeout, or cap.serp_api = false",
+  "reason_text": "SERP_LOOKUP_UNAVAILABLE"
+ },
  "C-1.2-k": {
   "check_id": "C-1.2",
   "status": "FAIL",

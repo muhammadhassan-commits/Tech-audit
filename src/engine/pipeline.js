@@ -17,6 +17,7 @@ import { acquirePages } from '../discovery/acquire.js';
 import { LlmJudge } from '../llm/judge.js';
 import * as C11 from '../checks/c1_1_robots.js';
 import * as C12 from '../checks/c1_2_sitemap.js';
+import * as X18 from '../checks/x1_8_serp.js';
 import * as C13 from '../checks/c1_3_status.js';
 import * as C14 from '../checks/c1_4_redirects.js';
 import * as C15 from '../checks/c1_5_canonical.js';
@@ -41,7 +42,7 @@ import * as C65 from '../checks/c6_5_freshness.js';
 
 // Execution order after the gate (dependencies first: C-1.7 composes 1.1–1.6, C-5.4 reads 3.1 + 5.3, …).
 const ORDER = [
-  ['C-1.2', C12], ['C-1.3', C13], ['C-1.4', C14], ['C-1.5', C15], ['C-1.6', C16], ['C-1.7', C17],
+  ['C-1.2', C12], ['C-1.3', C13], ['C-1.4', C14], ['C-1.5', C15], ['C-1.6', C16], ['C-1.7', C17], ['X-1.8', X18],
   ['C-2.1', C21], ['C-2.2', C22], ['C-2.3', C23], ['C-2.4', C24],
   ['C-3.1', C31], ['C-3.2', C32],
   ['C-4.1', C41],
@@ -265,7 +266,7 @@ function finalize(ctx, run, halted) {
   run.flags = [...ctx.flags];
   run.capabilities = {
     render_js: ctx.cfg.cap.render_js && ctx.renderer.available !== false,
-    serp_api: false,
+    serp_api: ctx.cfg.cap.serp_api && !!ctx.cfg.keys.cloro_api_key,
     psi_api: ctx.cfg.cap.psi_api && !!ctx.cfg.keys.google_api_key,
     // Reports what the run could actually use, not what was requested: a key whose CrUX API is not
     // enabled reads as false here, with the reason recorded alongside it.

@@ -6,7 +6,7 @@ import http from 'node:http';
 import { runAudit } from '../src/engine/pipeline.js';
 
 const CONFIG = {
-  cap: { render_js: false, llm_judge: false, crux_api: false, psi_api: false, commoncrawl: false },
+  cap: { render_js: false, llm_judge: false, crux_api: false, psi_api: false, commoncrawl: false, serp_api: false },
   net: { min_delay_ms: 0, url_budget_ms: 4000, secondary_budget_ms: 2500, unresponsive_ms: 3000, secondary_unresponsive_ms: 2000, timeout_connect_ms: 1200, timeout_read_ms: 1500, backoff_ms: [50, 100] },
 };
 
@@ -305,4 +305,62 @@ test('C-1.2: WARN scores 0.70, not the severity-derived value', async () => {
   assert.equal(pointsFor({ check_id: 'C-1.2', status: 'NOT_TESTABLE' }), null, 'excluded from the score');
   // Other checks keep the severity formula.
   assert.equal(pointsFor({ check_id: 'C-1.4', status: 'WARN', severity: 'MEDIUM' }), 0.4);
+});
+
+
+// ── C-2.4 Internal Links ─────────────────────────────────────────────────
+// A page without a <main> landmark must still have its content links counted. mainRegion() falls
+// back to the largest text-bearing block, which on many real sites contains no links at all; when
+// in_main was required unconditionally, every such page reported zero internal links and every
+// page in the sample looked like an orphan.
+
+test('C-2.4: content links are counted on a page with no <main> landmark', async () => {
+  const body = (extra) => `<!doctype html><html lang=en><head><title>T</title></head><body>
+    <header><a href="/">Home</a></header>
+    <nav><a href="/a/">A</a><a href="/b/">B</a></nav>
+    <section><p>A long block of text that carries no links at all, which is what makes the largest
+    text-bearing block the wrong place to look for them on a page like this one.</p></section>
+    <div><p>Body copy that does link onward to <a href="/a/">the first page</a> and to
+    <a href="/b/">the second page</a>.</p>${extra || ''}</div>
+    <footer><a href="/c/">C</a></footer></body></html>`;
+
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(body());
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const results = report.results.filter((r) => r.check_id === 'C-2.4');
+    assert.ok(results.length, 'C-2.4 produced results');
+    const counted = results.map((r) => r.metrics?.contextual_links ?? 0);
+    assert.ok(counted.some((n) => n > 0),
+      `every page reported zero contextual links (${counted.join(', ')}) — the <main> fallback is broken again`);
+    // The menu, header and footer links must still be excluded.
+    const withLinks = results.find((r) => (r.metrics?.contextual_links ?? 0) > 0);
+    assert.ok(withLinks.metrics.boilerplate_links > 0, 'boilerplate links are counted separately');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-2.4: a real <main> landmark still confines content links to it', async () => {
+  // Where <main> exists it is authoritative: a link outside it is not a content link, even in the
+  // body zone. This is the case the fallback must not loosen.
+  const html = `<!doctype html><html lang=en><head><title>T</title></head><body>
+    <div><p>Outside main, so not contextual: <a href="/outside/">outside</a>.</p></div>
+    <main><p>Inside main, so contextual: <a href="/inside/">inside</a>.</p></main>
+    </body></html>`;
+  const { extractFacts } = await import('../src/parse/html.js');
+  const f = extractFacts(html, 'https://example.test/', 'https://example.test');
+  assert.equal(f.mainMethod, 'main');
+  const mainIsLandmark = f.mainMethod === 'main' || f.mainMethod === 'role_main';
+  const contextual = f.links.filter((l) => !l.discard && l.same_site && !l.in_breadcrumb
+    && l.zone === 'body' && (!mainIsLandmark || l.in_main));
+  assert.equal(contextual.length, 1, 'only the link inside <main> counts');
+  assert.ok(contextual[0].resolved.endsWith('/inside/'));
 });

@@ -1,4 +1,5 @@
 // Dashboard: run control, live progress, scoring views and the Reference affordance (R-SRC-7).
+import { fixFor } from './fixes.js';
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -216,24 +217,28 @@ $('#opts-btn').addEventListener('click', () => {
 $('#run-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const seed = $('#seed').value.trim();
-  if (!seed) return;
+  const urls = $('#opt-urls').value.split('\n').map((s) => s.trim()).filter(Boolean);
+  // Either input is enough. A list of pages says which site to look at just as clearly as a
+  // domain does, so requiring both only produced the "please fill out this field" dead end.
+  if (!seed && !urls.length) {
+    toast('Enter a domain, or open Options and paste the URLs you want checked.');
+    return;
+  }
   $('#run-btn').disabled = true;
   $('#idle').hidden = true;
   $('#report').hidden = true;
   $('#progress').hidden = false;
-  $('#progress-target').textContent = seed;
+  $('#progress-target').textContent = seed || `${urls.length} page(s)`;
   $('#phase-list').innerHTML = '';
   $('#activity').innerHTML = '';
   $('#gate-banner').hidden = true;
   const body = {
     seed,
-    gate_mode: $('#opt-gate').value,
     no_render: !$('#opt-render').checked,
     no_llm: !$('#opt-llm').checked,
-    ua_probe: $('#opt-ua').checked,
-    env: $('#opt-staging').checked ? 'staging' : 'production',
-    operator_urls: $('#opt-urls').value.split('\n').map((s) => s.trim()).filter(Boolean),
-    operator_urls_only: $('#opt-only-urls').checked,
+    operator_urls: urls,
+    // With no domain given, the URLs are the whole job: check exactly those and skip discovery.
+    operator_urls_only: !seed && urls.length > 0,
   };
   try {
     const { run_id, error } = await fetch('/api/audit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
@@ -308,6 +313,35 @@ function listen(runId) {
     src.close();
     $('#run-btn').disabled = false;
   };
+}
+
+/**
+ * Finding text, with the rule references lifted out of the sentence.
+ *
+ * Summaries are written with their provenance inline — "...never applied to it (R-6.5-8, F-6.5-2)"
+ * — which is exactly right for an audit trail and wrong for someone reading the report to decide
+ * what to do. The codes are kept, moved to a quiet line of their own, so the sentence reads as
+ * English and nothing is lost.
+ */
+const RULE_REF = /\s*\((?:see\s+)?((?:[RCEBFX]-[\d.]+(?:-\d+[a-z]?)?|R-[A-Z]+-\d+|F-[A-Z]+-\d+)(?:\s*[,/;]\s*)?)+\)/g;
+
+function plainText(text) {
+  if (!text) return { sentence: text, refs: [] };
+  const refs = [];
+  const sentence = String(text).replace(RULE_REF, (m) => {
+    refs.push(m.replace(/[()\s]/g, '').replace(/,/g, ', '));
+    return '';
+  }).replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+  return { sentence, refs };
+}
+
+/** A summary line, plus a muted line naming the rules it came from. */
+function summaryBlock(text, cls) {
+  const { sentence, refs } = plainText(text);
+  const wrap = document.createDocumentFragment();
+  wrap.appendChild(el('div', cls, sentence));
+  if (refs.length) wrap.appendChild(el('div', 'rule-ref', `Rule: ${refs.join(', ')}`));
+  return wrap;
 }
 
 // ── Report rendering ──────────────────────────────────────────────────────
@@ -386,7 +420,7 @@ function renderScore(report) {
     meta.appendChild(el('dd', null, v));
   }
   for (const h of report.headlines || []) {
-    const d = el('div', 'headline', `${h.reason_code} — ${h.summary}`);
+    const d = el('div', 'headline', plainText(h.summary).sentence);
     $('#score-note').prepend(d);
   }
 }
@@ -641,7 +675,7 @@ function renderResult(r) {
   if (r.confidence && r.confidence !== 'OBSERVED') head.appendChild(el('span', 'reason', r.confidence));
   head.appendChild(refBtn({ check_id: r.check_id, checkpoint: r.sub_findings?.find((s) => s.reason_code === r.reason_code)?.checkpoint, reason_code: r.reason_code, sources: r.sources, url: r.reference_url }));
   card.appendChild(head);
-  card.appendChild(el('div', 'summary', r.summary));
+  card.appendChild(summaryBlock(r.summary, 'summary'));
   if (r.routing_note) card.appendChild(el('div', 'caveat', r.routing_note));
   for (const c of r.caveats || []) card.appendChild(el('div', 'caveat', c));
 
@@ -652,31 +686,42 @@ function renderResult(r) {
     for (const s of subs) {
       const li = el('li');
       li.appendChild(statusPill(s.status, s.severity));
-      li.appendChild(el('span', 'sub-text', s.summary));
+      li.appendChild(el('span', 'sub-text', plainText(s.summary).sentence));
       li.appendChild(refBtn({ check_id: r.check_id, checkpoint: s.checkpoint, reason_code: s.reason_code, sources: s.sources }));
       ul.appendChild(li);
     }
     for (const n of notes) {
       const li = el('li');
       li.appendChild(el('span', 'pill NOT_APPLICABLE', 'NOTE'));
-      li.appendChild(el('span', 'sub-text', n.summary));
+      li.appendChild(el('span', 'sub-text', plainText(n.summary).sentence));
       li.appendChild(refBtn({ check_id: r.check_id, reason_code: n.reason_code, sources: n.sources }));
       ul.appendChild(li);
     }
     card.appendChild(ul);
   }
-  if (r.remediation) {
-    const rem = el('div', 'remediation');
-    rem.appendChild(el('div', null, r.remediation.action));
-    if (r.remediation.proposed) {
-      const pre = el('pre', null, r.remediation.proposed);
-      rem.appendChild(pre);
+  // How to fix. This replaces the raw measurements dump, which printed the tool's own numbers and
+  // gave the reader nothing to act on. The label states plainly whether the fix was generated from
+  // this page or is general advice, because presenting one as the other is how a reader ends up
+  // pasting an example onto a live site.
+  const fix = fixFor(r);
+  if (fix) {
+    const box = el('div', `fixbox ${fix.kind}`);
+    const head = el('div', 'fix-head');
+    head.appendChild(el('span', 'fix-title', 'How to fix'));
+    head.appendChild(el('span', `fix-kind ${fix.kind}`, fix.label));
+    box.appendChild(head);
+    if (fix.why) box.appendChild(el('p', 'fix-why', fix.why));
+    if (fix.how) box.appendChild(el('p', 'fix-how', fix.how));
+    if (fix.code) {
+      box.appendChild(el('div', 'fix-code-label', 'Paste this, replacing the existing block:'));
+      box.appendChild(el('pre', 'fix-code', fix.code));
     }
-    rem.appendChild(el('div', 'muted', `Confidence: ${r.remediation.confidence}. Values shown are observed on the page; placeholders must be supplied.`));
-    card.appendChild(rem);
+    if (r.remediation?.confidence) {
+      box.appendChild(el('div', 'fix-note', `Any placeholder values must be filled in before use (${String(r.remediation.confidence).toLowerCase()}).`));
+    }
+    card.appendChild(box);
   }
-  const lab = labFallback(r);
-  if (lab) card.appendChild(lab);
+
   if (r.evidence?.length) {
     const d = el('details', 'evidence');
     d.appendChild(el('summary', null, `Evidence (${r.evidence.length})`));
@@ -692,56 +737,8 @@ function renderResult(r) {
     }
     card.appendChild(d);
   }
-  if (r.metrics && Object.keys(r.metrics).length) {
-    const d = el('details', 'metrics');
-    d.appendChild(el('summary', null, 'Measurements'));
-    d.appendChild(el('pre', null, JSON.stringify(r.metrics, null, 2)));
-    card.appendChild(d);
-  }
   if (r.cross_references?.length) card.appendChild(el('div', 'muted', `Related: ${r.cross_references.join(', ')}`));
   return card;
-}
-
-// ── Previous audits: reopen a saved report without re-running ────────────
-async function loadRecent() {
-  try {
-    const { active, saved } = await fetch('/api/runs').then((r) => r.json());
-    const ids = [...new Set([...active.filter((a) => a.status === 'done').map((a) => a.run_id), ...saved.map((s) => s.run_id)])];
-    if (!ids.length) return;
-    const list = $('#recent-list');
-    list.innerHTML = '';
-    const rows = [];
-    for (const id of ids.slice(0, 12)) {
-      try {
-        const rep = await fetch(`/api/run/${id}`).then((r) => r.json());
-        if (!rep?.scores) continue;
-        rows.push({ id, rep });
-      } catch {
-        /* a saved file that cannot be read is skipped rather than breaking the list */
-      }
-    }
-    if (!rows.length) return;
-    rows.sort((a, b) => String(b.rep.run.started_at).localeCompare(String(a.rep.run.started_at)));
-    for (const { id, rep } of rows) {
-      const li = el('li');
-      li.appendChild(el('span', 'host', (rep.target.canonical_origin || rep.target.seed || id).replace(/^https?:\/\//, '')));
-      const badge = el('span', `verdict ${rep.scores.verdict}`, rep.scores.verdict.replace(/_/g, ' '));
-      badge.style.margin = '0';
-      li.appendChild(badge);
-      li.appendChild(el('span', 'when', `${rep.scores.overall_percent == null ? '—' : rep.scores.overall_percent + '%'} · ${new Date(rep.run.started_at).toLocaleString()}`));
-      const open = el('button', 'ghost', 'Open');
-      open.type = 'button';
-      open.addEventListener('click', () => {
-        history.replaceState(null, '', `#run=${id}`);
-        render(rep);
-      });
-      li.appendChild(open);
-      list.appendChild(li);
-    }
-    $('#recent').hidden = false;
-  } catch {
-    /* the list is a convenience; its absence must never block a new run */
-  }
 }
 
 /** Deep link: /#run=<id> opens that saved report directly. */
@@ -761,6 +758,6 @@ async function openFromHash() {
 }
 
 loadRegister();
-openFromHash().then((opened) => {
-  if (!opened) loadRecent();
-});
+// A run id is a UUID and acts as the key to that one report: holding the link is what grants
+// access to it. Nothing lists other people's runs, so nothing else can reach them.
+openFromHash();

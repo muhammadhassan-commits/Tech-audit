@@ -7,8 +7,24 @@ const CRAWL_REL = new Set(['nofollow', 'sponsored', 'ugc']);
 
 const GENERIC = /^(click here|read more|learn more|here|this|more|link|download|continue|details|see more|view more|find out more|more info|mehr|leer más|en savoir plus|lire la suite|weiterlesen|saiba mais)$/i;
 
+/**
+ * Links in the page's own content, as opposed to the menu, header, footer or sidebar that every
+ * page repeats.
+ *
+ * in_main is only meaningful when the main region was found by a real landmark. Where there is no
+ * <main> or [role=main], mainRegion() falls back to the largest text-bearing block, and on a great
+ * many sites that block holds no links at all — so every link fails in_main, the page reports zero
+ * contextual links, and every page in the sample looks like an orphan. That is a defect in the
+ * measurement, not a finding about the site.
+ *
+ * The zone is derived independently, from the landmark tags themselves (header/nav/footer/aside),
+ * so zone === 'body' already means "not boilerplate". When the main region was guessed rather than
+ * found, that is the signal to trust.
+ */
 function contextual(f) {
-  return f.links.filter((l) => !l.discard && l.same_site && l.in_main && !l.in_breadcrumb && l.zone === 'body');
+  const mainIsLandmark = f.mainMethod === 'main' || f.mainMethod === 'role_main';
+  return f.links.filter((l) => !l.discard && l.same_site && !l.in_breadcrumb && l.zone === 'body'
+    && (!mainIsLandmark || l.in_main));
 }
 
 export async function run(ctx) {

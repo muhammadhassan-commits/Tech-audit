@@ -29,7 +29,7 @@ function startFixture(robotsHandler) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-const CONFIG = { cap: { render_js: false, llm_judge: false, crux_api: false, psi_api: false, commoncrawl: false }, net: { min_delay_ms: 0, secondary_budget_ms: 4000, url_budget_ms: 6000, secondary_unresponsive_ms: 3000, unresponsive_ms: 5000 } };
+const CONFIG = { cap: { render_js: false, llm_judge: false, crux_api: false, psi_api: false, commoncrawl: false, serp_api: false }, net: { min_delay_ms: 0, secondary_budget_ms: 4000, url_budget_ms: 6000, secondary_unresponsive_ms: 3000, unresponsive_ms: 5000 } };
 
 test('gate: a 5xx robots.txt halts every other factor in strict mode', async () => {
   const server = await startFixture((req, res) => {

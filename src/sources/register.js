@@ -172,7 +172,7 @@ export class SourceRegister {
 
     this.factors = new Map();
     for (const r of rowsToObjects(sheets.Factors)) {
-      if (!/^C-\d/.test(r.Factor)) continue;
+      if (!/^[CX]-\d/.test(r.Factor)) continue;
       this.factors.set(r.Factor, {
         check_id: r.Factor,
         name: r.Name,
@@ -187,7 +187,7 @@ export class SourceRegister {
     this.checkpoints = new Map();
     this.byReason = new Map(); // reason_code → [checkpoint]
     for (const r of rowsToObjects(sheets.Checkpoints)) {
-      if (!/^C-\d/.test(r.Checkpoint)) continue;
+      if (!/^[CX]-\d/.test(r.Checkpoint)) continue;
       const cp = {
         check_id: r.Factor,
         checkpoint: r.Checkpoint,
