@@ -92,8 +92,23 @@ export function createServer() {
       // only through its own run id, which is a UUID handed to whoever started the run.
       if (url.pathname === '/api/audit' && req.method === 'POST') {
         const body = await readJson(req);
-        const seed = String(body.seed || '').trim();
-        if (!seed) return send(res, 400, { error: 'seed is required' });
+        const urls = (Array.isArray(body.operator_urls) ? body.operator_urls : [])
+          .map((u) => String(u || '').trim())
+          .filter(Boolean);
+        // A list of pages names the site just as clearly as a domain does. The form stopped
+        // requiring a domain; this did not, so a URL-only run was rejected here instead.
+        // With no domain, the first URL's origin is the target and discovery is skipped.
+        let seed = String(body.seed || '').trim();
+        if (!seed && urls.length) {
+          try {
+            seed = new URL(urls[0]).origin;
+          } catch {
+            return send(res, 400, { error: `"${urls[0]}" is not a full URL. Include https://, or enter a domain above.` });
+          }
+        }
+        if (!seed) {
+          return send(res, 400, { error: 'Enter a domain, or open Options and paste the URLs you want checked.' });
+        }
         const run_id = crypto.randomUUID();
         const state = { run_id, seed, status: 'running', events: [], report: null, started: new Date().toISOString(), listeners: new Set() };
         runs.set(run_id, state);
@@ -103,8 +118,8 @@ export function createServer() {
         if (body.no_render) config.cap = { ...(config.cap || {}), render_js: false };
         if (body.no_llm) config.cap = { ...(config.cap || {}), llm_judge: false };
         if (body.ua_probe) config.cap = { ...(config.cap || {}), ua_probe: true };
-        if (body.operator_urls_only) config.operator_urls_only = true;
-        runAudit(seed, { config, operator_urls: body.operator_urls || [] }, (e) => {
+        if (body.operator_urls_only || (!String(body.seed || '').trim() && urls.length)) config.operator_urls_only = true;
+        runAudit(seed, { config, operator_urls: urls }, (e) => {
           state.events.push(e);
           for (const l of state.listeners) l(e);
         })
