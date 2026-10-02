@@ -702,6 +702,11 @@ function renderResult(r) {
     }
     card.appendChild(ul);
   }
+  // Core Web Vitals with no field data: show the lab numbers rather than an empty card. Scored
+  // nowhere — see labFallback for why they are presented the way they are.
+  const lab = labFallback(r);
+  if (lab) card.appendChild(lab);
+
   // How to fix. This replaces the raw measurements dump, which printed the tool's own numbers and
   // gave the reader nothing to act on. The label states plainly whether the fix was generated from
   // this page or is general advice, because presenting one as the other is how a reader ends up
