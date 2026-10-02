@@ -285,33 +285,104 @@ a { color: var(--accent); }
 .rule-ref { font-size: 10.5px; color: var(--muted); font-family: var(--mono); padding: 0 12px 6px; opacity: 0.75; }
 
 /* ── Print / PDF export ───────────────────────────────────────────────────
-   A report a CEO can print or save as PDF: light, flat, every panel open,
-   no interactive chrome, and nothing clipped mid-finding. */
+   The screen view and the printed view are different documents.
+
+   On screen everything is available and most of it is collapsed. Printing used to force every
+   disclosure open and flatten the lot: 87 A4 pages for one audit, 46% of it raw evidence. Nobody
+   reads that, which is the same as it not being readable.
+
+   So the printed copy is the report: the score, what is wrong, and what to do about it. Passes are
+   listed as single lines — present, so the reader can see they were checked, without 107 cards.
+   Evidence is left on screen, where it can be opened per finding and where the URLs are live.
+
+   Backgrounds are not relied on: browsers print with background graphics off by default, so every
+   state is carried by text colour and a border instead of a fill. */
 @media print {
   :root {
-    --bg: #fff; --panel: #fff; --panel-2: #f6f8fa; --line: #c9d1d9; --text: #111820; --muted: #4a5560;
-    --pass: #1a7f37; --warn: #8a6100; --fail: #b3242f; --critical: #8a0f22; --na: #6e7781; --modelled: #6f42c1;
+    --bg: #fff; --panel: #fff; --panel-2: #fff; --line: #b9c2cc; --text: #111820; --muted: #4a5560;
+    --pass: #166534; --warn: #854d0e; --fail: #991b1b; --critical: #7f1d1d; --na: #52525b; --modelled: #5b21b6;
+    --accent: #1d4ed8;
   }
-  body { background: #fff; color: #111820; font-size: 10.5pt; }
-  .topbar { position: static; border-bottom: 2px solid #111820; padding: 0 0 10px; }
-  #run-form, #opts-btn, .options, #progress, #idle, .dist-toggle, .ref-btn, .toast, .ref-pop,
-  .report-actions button { display: none !important; }
+  body { background: #fff; color: var(--text); font-size: 9.5pt; line-height: 1.45; }
+
+  /* Interactive chrome, and the audit trail, which belongs on screen. */
+  #run-form, #opts-btn, .options, #progress, #idle, .published-note, .dist-toggle, .ref-btn,
+  .toast, .ref-pop, .report-actions, .evidence, #discovery-detail, .rule-ref,
+  .pipeline-preview { display: none !important; }
+
   main { padding: 0; max-width: none; }
-  .panel, .cat-body, .factor, .result { border-color: var(--line); break-inside: avoid; }
-  .grid-top { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .score-card { grid-column: 1 / -1; display: grid; grid-template-columns: 200px 1fr; gap: 16px; text-align: left; align-items: start; }
-  .score-ring { margin: 0; width: 150px; }
+  .panel { border: 1px solid var(--line); border-radius: 0; padding: 10px 12px; margin-bottom: 10px; break-inside: avoid; }
+
+  /* ── Masthead, repeated as a running header is not possible in CSS, so it leads page 1 ── */
+  .topbar { position: static; display: block; border-bottom: 2px solid var(--text); padding: 0 0 8px; margin-bottom: 10px; }
+  .mark { display: none; }
+  .topbar h1 { font-size: 15pt; }
+  .sub { font-size: 8.5pt; color: var(--muted); }
+  #report-stamp { display: block; font-size: 8.5pt; color: var(--muted); margin-bottom: 10px; }
+
+  /* ── Summary block ───────────────────────────────────────────────────── */
+  .grid-top { display: block; }
+  /* Place the card explicitly. Auto-placement drops the metadata list into the 120px ring column,
+     where every value wraps mid-word ("https:/ /wellow s.com"). */
+  .score-card { display: grid; grid-template-columns: 120px 1fr; gap: 10px 14px; align-items: start; text-align: left; }
+  .score-card > h2 { grid-column: 1 / -1; }
+  .score-ring { grid-column: 1; margin: 0; width: 110px; }
+  /* A grid item fills its column unless told otherwise, which stretches the verdict badge across
+     the page. */
+  .verdict { grid-column: 2; justify-self: start; align-self: start; }
+  .score-note { grid-column: 2; align-self: start; margin-top: 0; }
+  .score-card > .run-meta { grid-column: 1 / -1; }
   .ring-fg { transition: none; }
-  /* Every factor and every disclosure is opened, so nothing is hidden in the printed copy. */
+  .score-value { font-size: 26pt; }
+  .score-value small { font-size: 12pt; }
+  .verdict { border: 1px solid currentColor; padding: 2px 8px; }
+  .run-meta { grid-template-columns: max-content 1fr; gap: 2px 10px; font-size: 8.5pt; }
+  .run-meta dd { overflow-wrap: anywhere; }
+
+  /* ── Findings ────────────────────────────────────────────────────────── */
+  .cat { break-inside: auto; margin-bottom: 8px; }
+  .cat > header { border: 1px solid var(--line); border-bottom: none; padding: 7px 10px; break-after: avoid; }
+  .factor { break-inside: auto; }
+  .factor > header { padding: 7px 10px; break-after: avoid; }
   .factor-body, .cat-body { display: block !important; }
-  details { display: block !important; }
-  details > summary { display: none; }
-  details > *:not(summary) { display: block !important; }
-  .evidence .ev-item .val { max-height: none; overflow: visible; }
-  .metrics { display: none; } /* measurement dumps belong in the JSON, not the printed report */
-  .cat { break-inside: avoid-page; }
-  .cat > header { background: #f6f8fa; }
-  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 8pt; color: var(--muted); word-break: break-all; }
-  .result > header { break-after: avoid; }
-  @page { margin: 14mm 12mm; }
+  .result { border: 1px solid var(--line); margin: 6px 0 0; break-inside: avoid; }
+  .result > header { padding: 5px 9px; break-after: avoid; }
+  .result .summary { padding: 0 9px 7px; font-size: 9.5pt; }
+  .sub-list { padding: 0 9px 7px; }
+  .sub-list li { border: none; border-left: 2px solid var(--line); border-radius: 0; padding: 3px 0 3px 8px; font-size: 8.5pt; }
+
+  /* A pass is one line. It confirms the check ran and found nothing, which is all it needs to do
+     on paper; the detail is on screen. */
+  .result.PASS .summary, .result.PASS .sub-list, .result.PASS .fixbox,
+  .result.PASS .caveat, .result.PASS .lab-fallback { display: none !important; }
+  .result.PASS { border-color: #d6dde4; margin-top: 3px; }
+  .result.PASS > header { padding: 3px 9px; font-size: 8.5pt; }
+
+  /* The fix is the reason the report exists, so it keeps its weight. */
+  .fixbox { margin: 0 9px 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent); break-inside: avoid; }
+  .fixbox.EXACT { border-left-color: var(--pass); }
+  .fix-kind { border: 1px solid currentColor; padding: 1px 6px; }
+  .fix-code { max-height: none; overflow: visible; font-size: 7.5pt; line-height: 1.4; border: 1px solid var(--line); break-inside: auto; }
+  .lab-fallback { margin: 0 9px 8px; break-inside: avoid; }
+
+  /* Status is carried by the word and its colour, since fills do not print. */
+  .pill { border: 1px solid currentColor; padding: 1px 6px; font-size: 7.5pt; }
+  .sev { font-size: 7.5pt; }
+
+  /* ── Tables ──────────────────────────────────────────────────────────── */
+  .table-wrap { overflow: visible; }
+  table { font-size: 8pt; width: 100%; table-layout: fixed; }
+  th, td { padding: 4px 6px; overflow-wrap: anywhere; }
+  thead { display: table-header-group; } /* repeat the header on every page the table spans */
+  tr { break-inside: avoid; }
+
+  /* ── Distribution ────────────────────────────────────────────────────── */
+  .bar-row { grid-template-columns: 150px 1fr 40px; font-size: 8.5pt; }
+  .bar-track { border: 1px solid var(--line); height: 11px; }
+  .bar-track > * { background: var(--muted) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Link targets are printed once, after the text, since a reader cannot click paper. */
+  .result .summary a[href^="http"]::after, .fix-how a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 7.5pt; color: var(--muted); word-break: break-all; }
+
+  @page { margin: 14mm 12mm 16mm; }
 }

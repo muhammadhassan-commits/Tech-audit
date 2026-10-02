@@ -325,14 +325,25 @@ function listen(runId) {
  */
 const RULE_REF = /\s*\((?:see\s+)?((?:[RCEBFX]-[\d.]+(?:-\d+[a-z]?)?|R-[A-Z]+-\d+|F-[A-Z]+-\d+)(?:\s*[,/;]\s*)?)+\)/g;
 
+// Bare references too: "C-2.2-h/i NOT_TESTABLE" reads as noise without the spec to hand. Only
+// matched with a checkpoint letter attached, so a plain factor id inside a sentence survives.
+const BARE_REF = /\s*[CX]-\d+\.\d+-[a-z](?:\/[a-z])*/g;
+
 function plainText(text) {
   if (!text) return { sentence: text, refs: [] };
   const refs = [];
-  const sentence = String(text).replace(RULE_REF, (m) => {
+  const take = (m) => {
     refs.push(m.replace(/[()\s]/g, '').replace(/,/g, ', '));
     return '';
-  }).replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
-  return { sentence, refs };
+  };
+  const sentence = String(text)
+    .replace(RULE_REF, take)
+    .replace(BARE_REF, take)
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/[;,]\s*([.;])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return { sentence, refs: [...new Set(refs)] };
 }
 
 /** A summary line, plus a muted line naming the rules it came from. */
@@ -360,16 +371,6 @@ function render(report) {
 
 // ── Report actions: print, export, expand ────────────────────────────────
 $('#btn-print').addEventListener('click', () => window.print());
-$('#btn-json').addEventListener('click', () => {
-  if (!REPORT) return;
-  const blob = new Blob([JSON.stringify(REPORT, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  const host = (REPORT.target.canonical_origin || REPORT.target.seed || 'audit').replace(/^https?:\/\//, '').replace(/[^a-z0-9.-]/gi, '_');
-  a.download = `audit-${host}-${REPORT.run.started_at.slice(0, 10)}.json`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-});
 $('#btn-expand').addEventListener('click', (e) => {
   const expand = e.target.textContent.startsWith('Expand');
   document.querySelectorAll('.factor-body, .cat-body').forEach((n) => { n.hidden = !expand; });
@@ -667,7 +668,7 @@ function renderFactor(factor, results, report) {
 }
 
 function renderResult(r) {
-  const card = el('article', 'result');
+  const card = el('article', `result ${r.status}`);
   const head = el('header');
   head.appendChild(statusPill(r.status, r.severity));
   head.appendChild(el('span', 'target', r.target_url ? `${r.scope}: ${r.target_url}` : r.scope));
@@ -676,8 +677,10 @@ function renderResult(r) {
   head.appendChild(refBtn({ check_id: r.check_id, checkpoint: r.sub_findings?.find((s) => s.reason_code === r.reason_code)?.checkpoint, reason_code: r.reason_code, sources: r.sources, url: r.reference_url }));
   card.appendChild(head);
   card.appendChild(summaryBlock(r.summary, 'summary'));
-  if (r.routing_note) card.appendChild(el('div', 'caveat', r.routing_note));
-  for (const c of r.caveats || []) card.appendChild(el('div', 'caveat', c));
+  // Caveats carry checkpoint ids too ("C-2.2-h/i NOT_TESTABLE (B-2.2-2)"), which read as noise to
+  // anyone who is not holding the spec. Same treatment as the finding text.
+  if (r.routing_note) card.appendChild(el('div', 'caveat', plainText(r.routing_note).sentence));
+  for (const c of r.caveats || []) card.appendChild(el('div', 'caveat', plainText(c).sentence));
 
   const subs = (r.sub_findings || []).filter((s) => s.reason_code !== r.reason_code);
   const notes = r.notes || [];
