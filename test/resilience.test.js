@@ -189,3 +189,120 @@ test('llm judge: stops spending when the run deadline is closer than one call ti
     else process.env.ANTHROPIC_API_KEY = had;
   }
 });
+
+
+// ── C-1.2 XML Sitemap, revised specification ─────────────────────────────
+// The check answers one question: can a usable parent sitemap be located and fetched. Everything
+// that used to make it fail — a variant that did not answer, a hostname that served the file
+// directly instead of redirecting — is now recorded and not scored, because none of it decides
+// whether the sitemap works. These tests pin the three outcomes that changed.
+
+const PAGE = '<!doctype html><html lang=en><head><title>Fixture</title></head><body><main><h1>Fixture</h1><p>Enough words in the body for the page to be treated as a real page.</p></main></body></html>';
+const SITEMAP = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://example.invalid/</loc></url></urlset>';
+
+function sitemapResult(report) {
+  return report.results.find((r) => r.check_id === 'C-1.2');
+}
+
+test('C-1.2: a sitemap that answers 200 at several addresses still passes', async () => {
+  // The previous rule failed this: a variant answering 200 on a non-canonical host was a FAIL.
+  // Serving the same sitemap at more than one address is not a sitemap failure, and hostname
+  // consolidation belongs to C-1.4 / C-1.5, so this must pass with a note and nothing more.
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (req.url === '/sitemap.xml') {
+      res.writeHead(200, { 'content-type': 'application/xml' });
+      return res.end(SITEMAP);
+    }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(PAGE);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const r = sitemapResult(report);
+    assert.equal(r.status, 'PASS', `expected PASS, got ${r.status} (${r.reason_code})`);
+    assert.ok(!/HOST_MISMATCH/.test(JSON.stringify(r)), 'the withdrawn host-mismatch rule must not fire');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-1.2: no sitemap anywhere is a low warning, not a failure', async () => {
+  // Google does not require a site to have a sitemap, so absence is reported and not failed.
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(PAGE);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const r = sitemapResult(report);
+    assert.equal(r.status, 'WARN', `expected WARN, got ${r.status}`);
+    assert.equal(r.reason_code, 'SITEMAP_NOT_FOUND');
+    assert.equal(r.severity, 'LOW');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-1.2: a declared sitemap that is dead, with another that serves, is a partial break', async () => {
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end(`User-agent: *\nAllow: /\nSitemap: ${base(server)}/missing-sitemap.xml\n`);
+    }
+    if (req.url === '/missing-sitemap.xml') { res.writeHead(404); return res.end(); }
+    if (req.url === '/sitemap.xml') {
+      res.writeHead(200, { 'content-type': 'application/xml' });
+      return res.end(SITEMAP);
+    }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(PAGE);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const r = sitemapResult(report);
+    assert.equal(r.status, 'WARN', `expected WARN, got ${r.status} (${r.reason_code})`);
+    assert.equal(r.reason_code, 'SITEMAP_PARTIALLY_BROKEN');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-1.2: a declared sitemap that is dead, with nothing else serving, fails', async () => {
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end(`User-agent: *\nAllow: /\nSitemap: ${base(server)}/missing-sitemap.xml\n`);
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(PAGE);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const r = sitemapResult(report);
+    assert.equal(r.status, 'FAIL', `expected FAIL, got ${r.status} (${r.reason_code})`);
+    assert.equal(r.reason_code, 'DECLARED_SITEMAP_UNAVAILABLE');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-1.2: WARN scores 0.70, not the severity-derived value', async () => {
+  const { pointsFor } = await import('../src/engine/scoring.js');
+  assert.equal(pointsFor({ check_id: 'C-1.2', status: 'WARN', severity: 'LOW' }), 0.7);
+  assert.equal(pointsFor({ check_id: 'C-1.2', status: 'WARN', severity: 'MEDIUM' }), 0.7);
+  assert.equal(pointsFor({ check_id: 'C-1.2', status: 'PASS' }), 1);
+  assert.equal(pointsFor({ check_id: 'C-1.2', status: 'FAIL', severity: 'HIGH' }), 0);
+  assert.equal(pointsFor({ check_id: 'C-1.2', status: 'NOT_TESTABLE' }), null, 'excluded from the score');
+  // Other checks keep the severity formula.
+  assert.equal(pointsFor({ check_id: 'C-1.4', status: 'WARN', severity: 'MEDIUM' }), 0.4);
+});

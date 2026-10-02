@@ -88,7 +88,7 @@ export async function run(ctx) {
     if (eff.noindex) {
       if (disallowed) b.hit('C-1.6-c', { summary: 'noindex is present but the URL is disallowed for Googlebot, so the noindex can never be seen (classic "blocked page still in search" cause).', evidence: srcEv, cross_references: ['C-1.1', 'C-1.7'] });
       else if (intentional) b.note('NOINDEX_INTENTIONAL', 'noindex on an intentionally private path (E-1.6-1).', srcEv);
-      else if (ctx.cfg.env === 'staging') b.hit('C-1.6-b', { status: 'WARN', severity: 'LOW', reason_code: 'STAGING_NOINDEX_EXPECTED', summary: 'noindex on a staging host (E-1.6-8).', evidence: srcEv });
+      else if (ctx.cfg.env === 'staging') b.hit('C-1.6-o', { status: 'WARN', severity: 'LOW', reason_code: 'STAGING_NOINDEX_EXPECTED', summary: 'noindex on a staging host (E-1.6-8).', evidence: srcEv });
       else b.hit('C-1.6-b', { summary: `Effective noindex for Googlebot (${effective.join(', ')}) on a page intended to rank.${page.isHomepage ? ' This is the homepage — run-level headline (F-1.6-4).' : ''}`, evidence: srcEv, cross_references: ['C-1.7'] });
     }
     if (eff.nofollow && ['homepage', 'category'].includes(page.page_type) && !intentional) b.hit('C-1.6-d', { summary: `nofollow on a hub page (${page.page_type}).`, evidence: srcEv });
@@ -111,7 +111,7 @@ export async function run(ctx) {
     }
     const outside = f.metaRobots.filter((m) => ['robots', 'googlebot'].includes(m.name) && !m.in_head);
     for (const m of outside) {
-      if (m.in_noscript) b.hit('C-1.6-l', { severity: 'HIGH', reason_code: 'META_ROBOTS_IN_NOSCRIPT', summary: `meta ${m.name} inside <noscript> ("${m.content}"): behaviour is inconsistent and the intent is almost always wrong (E-1.6-10).`, evidence: [domEv(page, 'RAW', 'noscript meta[name=robots]', m.content)] });
+      if (m.in_noscript) b.hit('C-1.6-p', { severity: 'HIGH', reason_code: 'META_ROBOTS_IN_NOSCRIPT', summary: `meta ${m.name} inside <noscript> ("${m.content}"): behaviour is inconsistent and the intent is almost always wrong (E-1.6-10).`, evidence: [domEv(page, 'RAW', 'noscript meta[name=robots]', m.content)] });
       else b.hit('C-1.6-l', { summary: `meta ${m.name} outside <head> ("${m.content}") is ignored by Google.`, evidence: [domEv(page, 'RAW', 'body meta[name=robots]', m.content)] });
     }
     const robotsMetas = f.metaRobots.filter((m) => m.name === 'robots' && m.in_head);

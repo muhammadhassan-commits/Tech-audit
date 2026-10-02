@@ -148,7 +148,7 @@ export async function run(ctx) {
         return;
       }
       if (advisory) {
-        b.hit('C-3.2-c', { status: 'WARN', severity: 'MEDIUM', reason_code: 'HREFLANG_POSSIBLY_MISSING', summary: `A single weak multilingual signal was observed (${allSignals[0]}) and no hreflang annotations are present. Advisory only (B-3.2-3).`, evidence: [annEv] });
+        b.hit('C-3.2-t', { status: 'WARN', severity: 'MEDIUM', reason_code: 'HREFLANG_POSSIBLY_MISSING', summary: `A single weak multilingual signal was observed (${allSignals[0]}) and no hreflang annotations are present. Advisory only (B-3.2-3).`, evidence: [annEv] });
       } else {
         b.hit('C-3.2-c', { summary: `Multilingual signals present (${allSignals.join('; ')}) but no hreflang in the HTML <head> or Link headers. Absence from the two evaluated mechanisms does not prove hreflang is undeclared.`, evidence: [annEv, hdrEv] });
       }

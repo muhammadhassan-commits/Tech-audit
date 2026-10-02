@@ -116,7 +116,7 @@ function evaluateC11(ctx, { withSample }) {
   if (gb.verdict === 'DISALLOWED') {
     const rulesEv = ev({ kind: 'file_content', source_url: robots.url, fetch_profile: 'RAW', selector_or_key: `line ${gb.rule.line_no}`, observed_value: `${gb.rule.type}: ${gb.rule.path} (group: ${gb.token})`, expected_value: 'Googlebot allowed on /' });
     if (cfg.env === 'staging') {
-      b.hit('C-1.1-b', { status: 'WARN', severity: 'LOW', reason_code: 'STAGING_BLOCK_EXPECTED', summary: 'Disallow: / applies to Googlebot on a host the operator declared as staging (E-1.1-12).', evidence: [rulesEv] });
+      b.hit('C-1.1-l', { status: 'WARN', severity: 'LOW', reason_code: 'STAGING_BLOCK_EXPECTED', summary: 'Disallow: / applies to Googlebot on a host the operator declared as staging (E-1.1-12).', evidence: [rulesEv] });
     } else {
       b.hit('C-1.1-b', { summary: `Disallow: / applies to Googlebot via the "${gb.token}" group (line ${gb.rule.line_no}). Crawling of the site is blocked.`, evidence: [rulesEv] });
     }

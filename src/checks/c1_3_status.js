@@ -120,7 +120,7 @@ function evaluatePage(ctx, page, b, probe) {
   const s = r.status;
   if (s >= 500) {
     if (s === 503 && r.headers?.['retry-after']) {
-      b.hit('C-1.3-b', { status: 'WARN', severity: 'MEDIUM', reason_code: 'MAINTENANCE_MODE', summary: `HTTP 503 with Retry-After: ${r.headers['retry-after']} (maintenance, E-1.3-3).`, evidence: [statusEv] });
+      b.hit('C-1.3-s', { status: 'WARN', severity: 'MEDIUM', reason_code: 'MAINTENANCE_MODE', summary: `HTTP 503 with Retry-After: ${r.headers['retry-after']} (maintenance, E-1.3-3).`, evidence: [statusEv] });
     } else {
       const cdn = s >= 520 && s <= 530;
       b.hit('C-1.3-b', { summary: `Server error HTTP ${s}${cdn ? ' (CDN_ERROR — CDN/edge 5xx, frequently transient)' : ''}.`, evidence: [statusEv] });

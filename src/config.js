@@ -93,9 +93,11 @@ export const DEFAULTS = {
   render: { raw_text_floor: 500, budget_ms: 10000, viewport: { width: 412, height: 915 } },
   discovery: { max_links_per_page: 500, max_fetches: 60 },
   group: { slug_collapse_min: 2, saturation_cap: 20, max_groups: 200 },
-  // require_canonical_host: operator rule — a variant must reach 200 AT the canonical host, not
-  // merely somewhere. Extends the PRD, which scores C-1.2 on reachability alone (F-1.2-6).
-  sitemap: { max_paths: 5, max_requests: 24, require_canonical_host: true },
+  // max_paths bounds how many declared Sitemap: URLs are followed; max_requests bounds the whole
+  // variant matrix. Hostname convergence is deliberately not a sitemap condition: a sitemap that
+  // answers 200 at more than one address is still a working sitemap, and consolidation is scored
+  // under C-1.4 and C-1.5 where it belongs.
+  sitemap: { max_paths: 5, max_requests: 24 },
   links: { max_validations: 25 },
   hreflang: { max_alternates: 15 },
   cwv: { max_calls: 24, psi_timeout_ms: 90000, concurrency: 4 },

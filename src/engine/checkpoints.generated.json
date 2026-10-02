@@ -100,30 +100,21 @@
  },
  "C-1.2-b": {
   "check_id": "C-1.2",
-  "status": "FAIL",
-  "status_text": "FAIL",
-  "severity": "HIGH",
-  "reason_code": "NO_SITEMAP_FOUND",
-  "condition": "No sitemap located: no SAME_DOMAIN declared entry is OPEN on any variant, neither fixed path is OPEN on any variant, no CROSS_HOST entry is OPEN, and **no** cell is INCONCLUSIVE",
-  "reason_text": "NO_SITEMAP_FOUND"
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "SITEMAP_NOT_FOUND",
+  "condition": "No parent sitemap located: robots.txt declares none, no standard location returns 200, and no request was inconclusive",
+  "reason_text": "SITEMAP_NOT_FOUND"
  },
  "C-1.2-c": {
   "check_id": "C-1.2",
   "status": "FAIL",
   "status_text": "FAIL",
   "severity": "HIGH",
-  "reason_code": "SITEMAP_UNREACHABLE",
-  "condition": "≥ 1 SAME_DOMAIN URL declared in robots.txt returns no 200 on any variant",
-  "reason_text": "SITEMAP_UNREACHABLE — the URL the site advertises to crawlers does not return 200"
- },
- "C-1.2-d": {
-  "check_id": "C-1.2",
-  "status": "FAIL",
-  "status_text": "FAIL",
-  "severity": "MEDIUM",
-  "reason_code": "SITEMAP_VARIANT_NOT_OPEN",
-  "condition": "≥ 1 REACHABLE candidate has ≥ 1 variant cell that is NOT_OPEN",
-  "reason_text": "SITEMAP_VARIANT_NOT_OPEN — evidence names every failing variant with its variant_failure"
+  "reason_code": "DECLARED_SITEMAP_UNAVAILABLE",
+  "condition": "robots.txt declares a sitemap, every variant of it returns 4xx/5xx or a network failure, and no other declared or standard-location parent sitemap returns 200",
+  "reason_text": "DECLARED_SITEMAP_UNAVAILABLE"
  },
  "C-1.2-e": {
   "check_id": "C-1.2",
@@ -133,15 +124,6 @@
   "reason_code": "SITEMAP_CROSS_HOST",
   "condition": "No SAME_DOMAIN sitemap located, but a CROSS_HOST declared sitemap is OPEN",
   "reason_text": "SITEMAP_CROSS_HOST — the domain itself returns no 200 sitemap URL on any variant; cross-host submission is valid only wh"
- },
- "C-1.2-f": {
-  "check_id": "C-1.2",
-  "status": "NOT_TESTABLE",
-  "status_text": "NOT_TESTABLE",
-  "severity": null,
-  "reason_code": "SITEMAP_VARIANT_INCONCLUSIVE",
-  "condition": "≥ 1 REACHABLE candidate, no variant cell NOT_OPEN, ≥ 1 cell INCONCLUSIVE",
-  "reason_text": "SITEMAP_VARIANT_INCONCLUSIVE"
  },
  "C-1.2-g": {
   "check_id": "C-1.2",
@@ -167,7 +149,7 @@
   "status_text": "PASS",
   "severity": null,
   "reason_code": null,
-  "condition": "≥ 1 REACHABLE candidate, and every cell of every REACHABLE candidate is OPEN (or NOT_APPLICABLE by variant_scope)",
+  "condition": "At least one declared or standard-location parent sitemap reaches a final HTTP 200 (directly, or through a redirect chain)",
   "reason_text": "—"
  },
  "C-1.3-a": {
@@ -2896,5 +2878,95 @@
   "reason_code": "RUBRIC_DISABLED",
   "condition": "cap.llm_judge = false",
   "reason_text": "RUBRIC_DISABLED — the currency check did not run"
+ },
+ "C-1.1-l": {
+  "check_id": "C-1.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "STAGING_BLOCK_EXPECTED",
+  "condition": "Disallow: / applies to Googlebot on a host the operator declared as staging (env = staging)",
+  "reason_text": "STAGING_BLOCK_EXPECTED"
+ },
+ "C-1.3-s": {
+  "check_id": "C-1.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "MAINTENANCE_MODE",
+  "condition": "HTTP 503 accompanied by a Retry-After header",
+  "reason_text": "MAINTENANCE_MODE"
+ },
+ "C-1.4-p": {
+  "check_id": "C-1.4",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "TRAILING_SLASH_BOTH_LIVE",
+  "condition": "Both the trailing-slash and the no-slash form return 2xx and neither redirects to the other",
+  "reason_text": "TRAILING_SLASH_BOTH_LIVE"
+ },
+ "C-1.5-u": {
+  "check_id": "C-1.5",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "CANONICAL_DUPLICATED_IDENTICAL",
+  "condition": "More than one link[rel=canonical] in <head>, all carrying the same value",
+  "reason_text": "CANONICAL_DUPLICATED_IDENTICAL"
+ },
+ "C-1.6-o": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "STAGING_NOINDEX_EXPECTED",
+  "condition": "Effective noindex for Googlebot on a host the operator declared as staging (env = staging)",
+  "reason_text": "STAGING_NOINDEX_EXPECTED"
+ },
+ "C-1.6-p": {
+  "check_id": "C-1.6",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "HIGH",
+  "reason_code": "META_ROBOTS_IN_NOSCRIPT",
+  "condition": "A meta robots element appears inside <noscript>",
+  "reason_text": "META_ROBOTS_IN_NOSCRIPT"
+ },
+ "C-3.2-t": {
+  "check_id": "C-3.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "HREFLANG_POSSIBLY_MISSING",
+  "condition": "Exactly one weak multilingual signal observed and no hreflang annotations present",
+  "reason_text": "HREFLANG_POSSIBLY_MISSING"
+ },
+ "C-5.3-o": {
+  "check_id": "C-5.3",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "LOW",
+  "reason_code": "LLMS_TXT_SITEMAP_CLONE",
+  "condition": "llms.txt is a flat list of URLs with no H2 sections and no descriptions",
+  "reason_text": "LLMS_TXT_SITEMAP_CLONE"
+ },
+ "C-1.2-j": {
+  "check_id": "C-1.2",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "SITEMAP_PARTIALLY_BROKEN",
+  "condition": "A declared sitemap is unavailable on every variant, while another declared or standard-location parent sitemap returns 200",
+  "reason_text": "SITEMAP_PARTIALLY_BROKEN"
+ },
+ "C-1.2-k": {
+  "check_id": "C-1.2",
+  "status": "FAIL",
+  "status_text": "FAIL",
+  "severity": "HIGH",
+  "reason_code": "SITEMAP_UNAVAILABLE",
+  "condition": "A sitemap endpoint responds but never reaches a successful response: a 5xx, or a redirect chain that resolves to a 4xx",
+  "reason_text": "SITEMAP_UNAVAILABLE"
  }
 }

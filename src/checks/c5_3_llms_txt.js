@@ -132,7 +132,7 @@ async function evaluateCheck(ctx) {
   if (!parsed.blockquote) b.hit('C-5.3-k', { summary: 'No blockquote summary after the H1 (optional in the spec, but it is what lets an agent understand the rest of the file).', evidence: [fileEv] });
   if (!parsed.linkSections.length) b.hit('C-5.3-e', { summary: 'No H2-delimited file-list sections: the file declares no links for an agent to follow.', evidence: [fileEv] });
   if (parsed.links.length && parsed.links.every((l) => l.bare || (!l.notes && !l.section))) {
-    b.hit('C-5.3-e', { status: 'WARN', severity: 'LOW', reason_code: 'LLMS_TXT_SITEMAP_CLONE', summary: `The file is a flat list of ${parsed.links.length} URLs with no section structure or descriptions. Technically conformant, low value: a useful file names each resource and says what it is for.`, evidence: [fileEv] });
+    b.hit('C-5.3-o', { status: 'WARN', severity: 'LOW', reason_code: 'LLMS_TXT_SITEMAP_CLONE', summary: `The file is a flat list of ${parsed.links.length} URLs with no section structure or descriptions. Technically conformant, low value: a useful file names each resource and says what it is for.`, evidence: [fileEv] });
   }
   if (parsed.optionalSection) b.note('MARKDOWN_TWINS_PRESENT', 'An "Optional" H2 section is present — correct use of the convention for secondary links an agent may skip (E-5.3-7).');
 

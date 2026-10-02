@@ -69,7 +69,7 @@ export async function run(ctx) {
     // Multiplicity / placement
     const distinct = [...new Set(head.map((c) => String(c.href ?? '').trim()))];
     if (head.length > 1 && distinct.length > 1) b.hit('C-1.5-b', { summary: `${head.length} link[rel=canonical] elements with different values in <head>; Google may ignore all of them.`, evidence: [rawEv] });
-    else if (head.length > 1) b.hit('C-1.5-b', { status: 'WARN', severity: 'LOW', reason_code: 'CANONICAL_DUPLICATED_IDENTICAL', summary: 'Duplicate identical canonical elements (sloppy but unambiguous, E-1.5-6).', evidence: [rawEv] });
+    else if (head.length > 1) b.hit('C-1.5-u', { status: 'WARN', severity: 'LOW', reason_code: 'CANONICAL_DUPLICATED_IDENTICAL', summary: 'Duplicate identical canonical elements (sloppy but unambiguous, E-1.5-6).', evidence: [rawEv] });
     if (!head.length && body.length) b.hit('C-1.5-c', { summary: 'Canonical present only in <body> of the parsed document; Google ignores it.', evidence: [domEv(page, 'RAW', 'body link[rel=canonical]', body.map((c) => c.href).join(' | '))] });
 
     const declared = head[0]?.href ?? null;

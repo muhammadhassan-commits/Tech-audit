@@ -17,10 +17,17 @@ const CRAWL_BLOCKING = new Set([
 ]);
 import { SEV_RANK } from './result.js';
 
+// Checks whose specification fixes the WARN value instead of deriving it from severity.
+// C-1.2: a sitemap that is missing or partly broken is a real but contained problem, and the
+// specification sets it at 0.70 rather than the 0.30-0.40 the severity formula would give.
+const FIXED_WARN_POINTS = { 'C-1.2': 0.7 };
+
 export function pointsFor(result) {
   if (result.status === 'PASS') return 1.0;
   if (result.status === 'FAIL') return 0.0;
   if (result.status === 'WARN') {
+    const fixed = FIXED_WARN_POINTS[result.check_id];
+    if (fixed != null) return fixed;
     const rank = SEV_RANK[result.severity] ?? 1;
     return Math.max(0.1, 0.5 - 0.1 * rank);
   }

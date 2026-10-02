@@ -3686,6 +3686,276 @@ Registered so findings can be corroborated and the reader can go deeper. Under R
 
 **Currency note:** thresholds and vendor behaviours in this document reflect the sources as of **8 September 2026**, and the register is re-resolved on the R-SRC-5 schedule thereafter. §2.3 carries a threshold\_set\_version; when a source changes, the registry is updated with a dated note and the version string is incremented. The tool must never score against an unannounced or anticipated change (R-4.1-0).
 
+
+
+# **ADDENDUM A — Changes since v2.0, as implemented**
+
+This addendum records every behaviour in the built tool that v2.0 does not describe. It is written
+to be merged into the body of the PRD; until it is, this section is the specification for the items
+it lists. Every rule here is either an **operator rule** (a decision taken during a live audit,
+marked as such) or a **registry row for an exception v2.0 already defines** but never gave a row.
+
+Nothing in this addendum introduces an SEO rule from outside the register. Where a threshold or a
+severity is this tool's judgement rather than a documented requirement, the row says so and the
+finding text repeats it.
+
+**Implemented in TOOL\_VERSION 1.2.0.** Threshold set `2026-09`; rubric `s6-2026-09` (unchanged).
+
+---
+
+## **ADD-1 — Nine checkpoint rows added to the register**
+
+Each of these reason codes was being emitted by the engine under a **borrowed checkpoint id**.
+Because R-SRC resolution looks up the checkpoint before the reason code, every one of them resolved
+to the row of a *different* rule, and the Reference affordance displayed that other rule's condition
+text and sources. That is the failure F-SRC-2 names, so each now has an id and a row of its own.
+
+| Checkpoint | reason\_code | Status | Severity | Provenance |
+| :---- | :---- | :---- | :---- | :---- |
+| C-1.1-l | STAGING\_BLOCK\_EXPECTED | WARN | LOW | E-1.1-12 |
+| ~~C-1.2-i~~ | ~~SITEMAP\_VARIANT\_HOST\_MISMATCH~~ | — | — | **Withdrawn — see ADD-8** |
+| C-1.3-s | MAINTENANCE\_MODE | WARN | MEDIUM | E-1.3-3 |
+| C-1.4-p | TRAILING\_SLASH\_BOTH\_LIVE | FAIL | HIGH | **Operator rule** |
+| C-1.5-u | CANONICAL\_DUPLICATED\_IDENTICAL | WARN | LOW | E-1.5-6 |
+| C-1.6-o | STAGING\_NOINDEX\_EXPECTED | WARN | LOW | E-1.6-8 |
+| C-1.6-p | META\_ROBOTS\_IN\_NOSCRIPT | WARN | HIGH | E-1.6-10 |
+| C-3.2-t | HREFLANG\_POSSIBLY\_MISSING | WARN | MEDIUM | B-3.2-3 |
+| C-5.3-o | LLMS\_TXT\_SITEMAP\_CLONE | WARN | LOW | C-5.3 quality judgement |
+
+### **The two operator rules in full**
+
+* **C-1.2-i — SITEMAP\_VARIANT\_HOST\_MISMATCH. Withdrawn.** It required every sitemap variant to
+  reach 200 *at* the canonical host. The revised C-1.2 specification (ADD-8) states the opposite —
+  a sitemap answering 200 on several hostnames must not fail the check — so the rule and its
+  register row have been removed. Hostname consolidation is scored under C-1.4 and C-1.5, where it
+  was already assessed.
+
+* **C-1.4-p — TRAILING\_SLASH\_BOTH\_LIVE.** *Condition:* both the trailing-slash and the no-slash form
+  return 2xx and neither redirects to the other. *Sources:* G7, G2. Google documents that the same
+  content reachable at several URLs must be consolidated to one canonical form; **the document does
+  not assign a severity**, so FAIL / HIGH is tool policy. Cross-references C-1.5. Where one form
+  redirects to the other, the correct-consolidation note is emitted instead (E-1.4-4); where the
+  opposite form returns 4xx, only one form is served and nothing is raised.
+
+---
+
+## **ADD-2 — Configuration added to section 2**
+
+* **R-CFG-1 — `gate.robots_mode`**, one of `prd` or `strict`. Default **`strict`**.
+  * `prd` — the v2.0 behaviour: a robots.txt failure halts the pipeline, but the control-file checks
+    (C-1.2, C-5.3) still run, per F-RUN-6 / F-RUN-8.
+  * `strict` — an **operator directive**: a robots.txt failure halts *everything*, and every other
+    factor receives a halted result. This is the deployed default, because the execution protocol
+    requires that no factor be evaluated after a gate failure.
+  * A robots.txt that returns **404 still passes the gate** in both modes. An absent file is a valid
+    "everything is allowed" state, not a failure.
+
+* **R-CFG-2 — `sitemap.require_canonical_host`. Removed.** It enabled C-1.2-i, which ADD-8 withdraws. Hostname convergence is not a sitemap condition.
+
+* **R-CFG-3 — `operator_urls[]` and `operator_urls_only`.** The operator may supply URLs directly.
+  With `operator_urls_only = true`, discovery is skipped and only the supplied URLs are audited; the
+  Min 1 / Max 10 bound and the robots.txt intersection (MODULE A.2) still apply to them. A single supplied
+  URL does not make the site single-page: `site_shape` is still determined by A.0.
+
+* **R-CFG-4 — `llm.request_timeout_ms` (120 000 ms) and `llm.max_retries` (1).** See ADD-4.
+
+---
+
+## **ADD-3 — Verdict vocabulary: BLOCKED is split**
+
+v2.0 R-SCORE-5 forces verdict **BLOCKED** on any CRITICAL FAIL. In practice this labelled a site that
+had been crawled completely, and whose critical failure was a content problem, as though the crawler
+had been unable to reach it at all.
+
+* **R-SCORE-5a** — a CRITICAL FAIL whose reason\_code is in the **crawl-blocking set** yields
+  **BLOCKED**. That set is: ROBOTS\_BLOCKS\_GOOGLEBOT\_SITEWIDE, ROBOTS\_UNAVAILABLE,
+  NOT\_INDEXABLE\_ROBOTS, NOT\_INDEXABLE\_NOINDEX, NOINDEX\_PRESENT, NOINDEX\_UNREACHABLE,
+  HOMEPAGE\_NOT\_INDEXABLE, NOT\_INDEXABLE\_STATUS, SERVER\_ERROR, REDIRECT\_LOOP,
+  REDIRECT\_HOPS\_EXCEEDED, HTTPS\_DOWNGRADE, TLS\_INVALID, AI\_BLOCKED\_BY\_WILDCARD,
+  ORIGIN\_UNREACHABLE, ACCESS\_DENIED, NOT\_INDEXABLE\_EMPTY.
+* **R-SCORE-5b** — any other CRITICAL FAIL yields **CRITICAL\_ISSUES**.
+* The 40-point cap of R-SCORE-5 applies identically to both. Only the label changes.
+* An aborted run whose gate failed remains **BLOCKED** regardless.
+
+---
+
+## **ADD-4 — The Section 6 LLM budget is a time budget as well as a call budget**
+
+`llm.max_calls_per_run` bounds spend but not duration. The run deadline (`run.max_minutes`) is only
+tested between operations, so a single unanswered request can outlast it and abort the run with
+BUDGET\_EXHAUSTED — losing the entire report for the sake of one rubric.
+
+* **R-S6-6** — every judge call carries an explicit wall-clock timeout (`llm.request_timeout_ms`) and
+  a retry cap (`llm.max_retries`). The SDK defaults — a 10-minute timeout with 2 retries — permit
+  30 minutes of silence for a single call and must not be relied on.
+* **R-S6-7** — the judge refuses to **start** a call when less than `request_timeout_ms` remains
+  before the run deadline, and emits `llm_budget` with reason `RUN_TIME_BUDGET` once. The remaining
+  sub-scores become NOT\_TESTABLE, which R-SCORE-1 already excludes from numerator and denominator,
+  and which R-SCORE-6 suppresses entirely above 25 %. Degrading the section is correct; losing the
+  report is not.
+
+---
+
+## **ADD-5 — C-4.1 presentation when there is no field data**
+
+No change to assessment. R-4.1-9 and F-4.1-1 stand: lab data never occupies a pass/fail position,
+and a finding with no field data at any level remains **NOT\_TESTABLE** and outside the score.
+
+* **R-4.1-12 — presentation.** Where the ladder returns no field data but lab diagnostics exist, the
+  lab measurements (LCP, CLS, TBT, Speed Index and the lab performance score, per form factor) are
+  **displayed** on the finding, accompanied by a statement that they are one synthetic run from a
+  single location on a simulated device and do not determine whether the site passes Core Web
+  Vitals. They are rendered without pass / warn / fail colouring, so that no reader can mistake a
+  diagnostic for a verdict. Where field data *is* present, lab data is not surfaced in this
+  position at all.
+
+---
+
+## **ADD-6 — Report provenance**
+
+* **R-RUN-9** — `run.tool_version` identifies the code that produced the report, and must be
+  incremented whenever a change can alter a verdict, a score or a citation. A report produced by an
+  earlier version is not comparable with a current one, and publication tooling must refuse it by
+  default. 1.2.0 covers: the ADD-3 verdict split, C-1.4-p, the ADD-1 registry rows, the ADD-4
+  budget bounds, and the revised C-1.2 specification in ADD-8.
+
+---
+
+## **ADD-7 — Items listed in the checklist but not specified**
+
+These three appear in the audit checklist and are **displayed in the report**, but v2.0 defines no
+rules, conditions, reason codes or sources for them. They are **never evaluated and never scored** —
+they cannot raise or lower a percentage — and the report states why.
+
+| Id | Item | Section | What is missing |
+| :---- | :---- | :---- | :---- |
+| X-1.8 | Googlebot Access (using SERP) | 1 | No conditions, and no SERP data source (`capabilities.serp_api = false`). Google publishes no search API, so a third-party SERP provider or Search Console access would be required. A `site:` query is in any case a weak proxy for index coverage. |
+| X-5.3b | LLms-full.txt | 5 | No conditions, and no registered specification for the file. |
+| X-5.5 | Common Crawl presence | 5 | No conditions, and no threshold for what presence or absence would mean. |
+
+**To specify any of them**, supply: the condition rows, the status and severity for each condition,
+the reason codes, and at least one registered source per reason code (R-SRC-1). Without a source a
+finding cannot be rendered under the attribution contract, and inventing one is forbidden by 4.1.
+
+---
+
+## **ADD-8 — C-1.2 XML Sitemap, revised specification**
+
+This replaces the C-1.2 rules in the body of the PRD. The previous specification scored the check on
+**variant reachability**: every protocol x host combination of the sitemap path had to answer 200,
+and one that did not was a FAIL. That asks the wrong question. A sitemap either can be located and
+fetched or it cannot; *which* hostnames also serve it is a consolidation question, already scored
+under C-1.4 and C-1.5. Scoring it twice failed ordinary, working setups.
+
+### **ADD-8.1 — Purpose and scope**
+
+C-1.2 verifies that a usable **parent** sitemap can be located and fetched. It does **not**:
+
+* crawl child sitemaps;
+* extract or read sitemap URLs;
+* compare sitemap URLs against the sampled pages;
+* use sitemap URLs for page sampling;
+* validate `lastmod`, `changefreq` or `priority`;
+* compute sitemap coverage.
+
+### **ADD-8.2 — Discovery order**
+
+1. `Sitemap:` directives in robots.txt
+2. `https://<canonical-host>/sitemap.xml`
+3. `https://<canonical-host>/sitemap_index.xml`
+4. `https://<canonical-host>/sitemap-index.xml`
+5. `https://<canonical-host>/wp-sitemap.xml`
+
+The first parent sitemap located is recorded. Items 4 and 5 are new in this revision.
+
+### **ADD-8.3 — Variant check (optional, never decisive)**
+
+For the located path the tool may test `https://www.`, `https://`, `http://www.` and `http://`
+forms, recording `request_url`, `initial_status`, `redirect_chain`, `final_url`, `final_status` and
+`hop_count`. These are recorded for the reader. **They do not determine the status.**
+
+### **ADD-8.4 — PASS**
+
+**PASS when at least one legitimately discovered or declared parent sitemap reaches a final HTTP
+200**, whether directly or through a redirect chain. `200` passes; `301 → https → 200` passes;
+`308 → canonical host → 200` passes. A sitemap returning 200 on **both** www and non-www **passes**.
+
+### **ADD-8.5 — Conditions that must never fail this check**
+
+Each of the following is recorded as an unscored note:
+
+| Observation | Treatment |
+| :---- | :---- |
+| A non-canonical variant returns 200 | `SITEMAP_VARIANT_NOT_CANONICAL` — note |
+| A non-canonical variant redirects to the canonical sitemap | Acceptable; nothing raised |
+| An optional variant returns 404/410 while a valid sitemap exists | `SITEMAP_VARIANT_UNAVAILABLE` — note |
+| An `http://` sitemap redirects to `https://` | Acceptable; nothing raised |
+| The sitemap answers 200 at several addresses | `SITEMAP_MULTIPLE_ADDRESSES` — note |
+| Redirect-chain quality | Scored under **C-1.4**, not here |
+| Canonical-host consistency | Scored under **C-1.4 / C-1.5**, not here |
+
+### **ADD-8.6 — WARN**
+
+* **C-1.2-b — SITEMAP\_NOT\_FOUND (WARN / LOW).** No parent sitemap found through robots.txt or any
+  supported standard location. **This must not be a FAIL**: Google does not require a site to have a
+  sitemap.
+* **C-1.2-j — SITEMAP\_PARTIALLY\_BROKEN (WARN / MEDIUM).** A declared sitemap is unavailable on every
+  variant, while another valid declared or standard-location parent sitemap returns 200.
+
+### **ADD-8.7 — FAIL**
+
+FAIL only on clear evidence of a broken sitemap setup.
+
+* **C-1.2-c — DECLARED\_SITEMAP\_UNAVAILABLE (FAIL / HIGH).** robots.txt explicitly declares a sitemap,
+  **and** it returns 404/410/5xx or a network failure on every variant, **and** no other declared or
+  standard-location parent sitemap is usable. All three conditions are required.
+* **C-1.2-k — SITEMAP\_UNAVAILABLE (FAIL / HIGH).** A sitemap endpoint responds but never reaches a
+  successful response — a 5xx, or a redirect chain resolving to a 4xx. This is distinct from a clean
+  404 at a standard location, which means no sitemap is published there and is only ADD-8.6's
+  warning.
+
+### **ADD-8.8 — NOT\_TESTABLE**
+
+Reserved for cases where **the tool itself** could not establish whether a sitemap works: the request
+cap was reached before any sitemap was validated, a timeout, a DNS/network/tool failure, or a fetch
+capability failure (C-1.2-g, SITEMAP\_LOCATE\_INCONCLUSIVE).
+
+**Where one valid sitemap has already returned 200** and an *optional* variant later hits the cap or
+times out, the result stays **PASS** with the note `VARIANT_CHECK_INCOMPLETE`. It must not become
+NOT\_TESTABLE.
+
+### **ADD-8.9 — Scoring**
+
+| Status | Points |
+| :---- | :---- |
+| PASS | 100 % |
+| WARN | **70 %** |
+| FAIL | 0 % |
+| NOT\_TESTABLE | excluded from the score |
+
+Notes and informational findings never reduce the score.
+
+The 70 % WARN value **overrides R-SCORE-2** for this check, which would otherwise derive the value
+from severity and yield 30-40 %. It is registered as a fixed per-check value.
+
+### **ADD-8.10 — Register changes**
+
+| Row | Change |
+| :---- | :---- |
+| C-1.2-a | Reworded: PASS is one parent sitemap returning 200, nothing more |
+| C-1.2-b | FAIL / HIGH `NO_SITEMAP_FOUND` → **WARN / LOW `SITEMAP_NOT_FOUND`** |
+| C-1.2-c | Reworded as `DECLARED_SITEMAP_UNAVAILABLE`; now requires that nothing else serves |
+| C-1.2-d | **Deleted** — a variant that does not answer is now an unscored note |
+| C-1.2-f | **Deleted** — now `VARIANT_CHECK_INCOMPLETE`, an unscored note |
+| C-1.2-i | **Deleted** — the canonical-host operator rule is withdrawn |
+| C-1.2-j | **Added** — WARN / MEDIUM `SITEMAP_PARTIALLY_BROKEN` |
+| C-1.2-k | **Added** — FAIL / HIGH `SITEMAP_UNAVAILABLE` |
+
+`sitemap.require_canonical_host` is removed from §2 configuration; the rule it governed no longer
+exists.
+
 [^1]:  0-9a-f
 
 [^2]:  a-z
+---
+

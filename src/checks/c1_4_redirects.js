@@ -144,7 +144,7 @@ async function pageLevel(ctx, page, b) {
       const sEv = ev({ kind: 'http_status', source_url: slash.url, fetch_profile: 'RAW', selector_or_key: 'trailing-slash variant final status', observed_value: `${slash.status ?? 'no response'} ${slash.final_url || ''}`.trim(), expected_value: `redirect to ${page.finalUrl}` });
       const landsHere = slash.final_url && normalizeUrl(slash.final_url) === page.finalUrl;
       if (slash.status >= 200 && slash.status < 300 && !landsHere) {
-        b.hit('C-1.4-h', {
+        b.hit('C-1.4-p', {
           status: 'FAIL',
           severity: 'HIGH',
           reason_code: 'TRAILING_SLASH_BOTH_LIVE',
