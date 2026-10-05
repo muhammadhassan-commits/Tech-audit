@@ -4,6 +4,7 @@ import { ResultBuilder, ev, errorResult } from '../engine/result.js';
 import { bodyText } from '../net/http.js';
 import { extractFacts } from '../parse/html.js';
 import { wordCount } from '../parse/text.js';
+import { classifyResponse, VALIDITY } from '../net/validity.js';
 import { notRespondingText, notRespondingEvidence } from './_util.js';
 
 const NOT_FOUND_TITLE = /(404|not found|page not found|error|no results)/i;
@@ -37,7 +38,31 @@ export async function run(ctx) {
       const pev = ev({ kind: 'http_status', source_url: probe.url, fetch_profile: 'RAW', selector_or_key: 'status', observed_value: String(probe.rec.status), expected_value: '404 or 410' });
       b.addEvidence(pev);
       if (probe.rec.status >= 200 && probe.rec.status < 300) {
-        b.hit('C-1.3-e', { summary: `A URL guaranteed not to exist returned HTTP ${probe.rec.status} (soft-404 configuration).`, evidence: [pev] });
+        // A 200 on a URL that cannot exist is the signature of a soft 404 — but only if the body
+        // is the site answering. A bot challenge is also served with 200, and calling that a
+        // soft-404 configuration reports the auditor being challenged as a defect in the site.
+        const verdict = classifyResponse({
+          status: probe.rec.status,
+          headers: probe.rec.headers,
+          html: probe.html,
+          contentType: probe.rec.headers?.['content-type'],
+        });
+
+        if (verdict.state === VALIDITY.ACCESS_CHALLENGE) {
+          b.note('ACCESS_CHALLENGE_INTERFERED', `The missing-URL probe returned HTTP ${probe.rec.status}, but the body is a bot challenge rather than the site's own response (${verdict.reason}). Whether this site serves soft 404s could not be established — that is a fact about the request, not about the site.`, [pev]);
+        } else {
+          // Say what the body actually was, so the finding can be checked rather than taken on
+          // trust. A page that looks like the homepage and one that says "not found" are both
+          // soft 404s, but they are different mistakes with different fixes.
+          const looksLikeError = /not found|doesn['’]?t exist|no longer available|404|page you (are looking for|requested)/i.test(probe.html.slice(0, 4000));
+          const shape = looksLikeError
+            ? 'the body is a "page not found" design served with a success status'
+            : 'the body is ordinary page content, so a missing URL is being answered with a real page';
+          b.hit('C-1.3-e', {
+            summary: `A URL guaranteed not to exist returned HTTP ${probe.rec.status}, and ${shape}. Google calls this a soft 404: crawl budget is spent on URLs that do not exist, and they may be indexed.`,
+            evidence: [pev],
+          });
+        }
       }
     }
     const variants = ctx.derived.originVariants || [];

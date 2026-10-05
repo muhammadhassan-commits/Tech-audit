@@ -89,8 +89,8 @@ export const FIXES = {
     how: 'Rewrite it as a sentence a person would read: what the page offers and why it is worth opening.',
   },
   METADESC_MISSING: {
-    why: 'There is no description, so search engines will pull an arbitrary fragment of the page instead.',
-    how: 'Add a description of roughly 120–155 characters summarising the page.',
+    why: 'There is no description, so Google will write the snippet itself from the page content. That is often fine — but a good description is your chance to say why the result is worth clicking.',
+    how: 'Add a sentence or two summarising what the page offers. Around 120–155 characters usually survives untruncated — that is our guidance, not a Google limit; Google documents no length cap and may use its own snippet regardless.',
   },
   H1_MISSING: {
     why: 'The page has no main heading, so there is no clear statement of what it is about.',

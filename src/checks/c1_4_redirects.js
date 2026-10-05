@@ -1,6 +1,8 @@
 // C-1.4 — Redirects (site + page · RAW; RENDERED for client-side divergence).
 import { ResultBuilder, ev, errorResult } from '../engine/result.js';
 import { originOf, normalizeUrl } from '../parse/url.js';
+import { classifyResponse, VALIDITY } from '../net/validity.js';
+import { bodyText } from '../net/http.js';
 import { forEachPage, hasRendered, matchesAny } from './_util.js';
 
 const PERMANENT = new Set([301, 308]);
@@ -8,10 +10,63 @@ const TEMPORARY = new Set([302, 303, 307]);
 
 const chainText = (chain) => chain.map((h) => `${h.status} ${h.url}${h.location ? ` → ${h.location}` : ''}`).join(' | ');
 
+/**
+ * Do two origins actually serve the same site?
+ *
+ * Two hosts answering 200 is not enough to call them duplicate origins. One of them may be a
+ * parked page, a holding page, a different site on a shared host, or a bot challenge — all of
+ * which answer 200 and none of which mean the site is reachable at two addresses.
+ *
+ * The origin probe discards bodies, so the comparison is made here, and only when a non-converged
+ * 200 has already been seen: at most four extra secondary requests, in the case that is already
+ * suspicious. A fast audit should not pay for this on every run.
+ */
+async function originsEquivalent(ctx, canonicalOrigin, variantUrl) {
+  const get = async (url) => {
+    const rec = await ctx.http.fetch(url, { budgetClass: 'secondary', exempt: true, noCache: true });
+    const html = bodyText(rec) || '';
+    return {
+      rec,
+      html,
+      validity: classifyResponse({ status: rec.status, headers: rec.headers, html, contentType: rec.headers?.['content-type'] }),
+    };
+  };
+
+  const [a, b2] = await Promise.all([get(canonicalOrigin), get(variantUrl)]);
+
+  // A challenge or error on either side is not evidence of anything about the site.
+  if (a.validity.state !== VALIDITY.VALID_PAGE || b2.validity.state !== VALIDITY.VALID_PAGE) {
+    return { comparable: false, reason: `one of the two responses was not a usable page (${a.validity.state} / ${b2.validity.state})` };
+  }
+
+  const words = (html) => new Set(
+    String(html)
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3)
+      .slice(0, 2000),
+  );
+
+  const wa = words(a.html);
+  const wb = words(b2.html);
+  if (wa.size < 20 || wb.size < 20) {
+    return { comparable: false, reason: 'one of the two responses carried too little text to compare' };
+  }
+  let shared = 0;
+  for (const w of wa) if (wb.has(w)) shared++;
+  // Jaccard over the vocabulary. Tool policy: 0.6 is the point past which two pages are clearly
+  // the same content rather than two pages from the same template.
+  const similarity = shared / (wa.size + wb.size - shared);
+  return { comparable: true, equivalent: similarity >= 0.6, similarity: Number(similarity.toFixed(2)) };
+}
+
 export async function run(ctx) {
   const out = [];
   try {
-    out.push(siteLevel(ctx));
+    out.push(await siteLevel(ctx));
   } catch (e) {
     out.push(errorResult(ctx, 'C-1.4', e));
   }
@@ -19,7 +74,7 @@ export async function run(ctx) {
   return out;
 }
 
-function siteLevel(ctx) {
+async function siteLevel(ctx) {
   const { cfg } = ctx;
   const variants = ctx.derived.originVariants || [];
   const b = new ResultBuilder(ctx, 'C-1.4', { scope: 'site', target_url: ctx.canonicalOrigin });
@@ -31,12 +86,36 @@ function siteLevel(ctx) {
   if (answered.some((v) => v.terminal === 'REDIRECT_LOOP')) b.hit('C-1.4-b', { summary: 'Redirect loop on an origin variant.', evidence: answered.filter((v) => v.terminal === 'REDIRECT_LOOP').map(vEv) });
   if (answered.some((v) => v.terminal === 'REDIRECT_HOPS_EXCEEDED')) b.hit('C-1.4-e', { summary: `An origin variant exceeds ${cfg.net.max_redirect_hops} redirect hops.`, evidence: answered.filter((v) => v.terminal === 'REDIRECT_HOPS_EXCEEDED').map(vEv) });
   if (live200NotConverged.length) {
-    ctx.derived.multipleLiveOrigins = true;
-    b.hit('C-1.4-c', {
-      summary: `The site is reachable at ≥ 2 hosts without consolidation: ${[ctx.canonicalOrigin, ...new Set(live200NotConverged.map((v) => originOf(v.final_url)))].join(', ')}.`,
-      evidence: [...live200NotConverged, ...answered.filter((v) => originOf(v.final_url || v.url) === ctx.canonicalOrigin)].map(vEv),
-      cross_references: ['C-1.5'],
-    });
+    // Confirm the other origin is really serving this site before calling it a duplicate. Both
+    // responses must be usable pages and must carry the same content; a parked page, a holding
+    // page or a challenge all answer 200 without meaning anything of the sort.
+    const confirmed = [];
+    const unconfirmed = [];
+    for (const v of live200NotConverged.slice(0, 3)) {
+      let verdict;
+      try {
+        verdict = await originsEquivalent(ctx, ctx.canonicalOrigin, v.final_url || v.url);
+      } catch {
+        verdict = { comparable: false, reason: 'the comparison request failed' };
+      }
+      if (verdict.comparable && verdict.equivalent) confirmed.push({ v, verdict });
+      else unconfirmed.push({ v, verdict });
+    }
+
+    if (confirmed.length) {
+      ctx.derived.multipleLiveOrigins = true;
+      b.hit('C-1.4-c', {
+        summary: `The site is reachable at ≥ 2 hosts without consolidation: ${[ctx.canonicalOrigin, ...new Set(confirmed.map((c) => originOf(c.v.final_url)))].join(', ')}. Each serves the same content (${confirmed.map((c) => `${Math.round(c.verdict.similarity * 100)}% word overlap`).join(', ')}), so the two addresses compete for the same signals.`,
+        evidence: [...confirmed.map((c) => c.v), ...answered.filter((v) => originOf(v.final_url || v.url) === ctx.canonicalOrigin)].map(vEv),
+        cross_references: ['C-1.5'],
+      });
+    }
+    for (const { v, verdict } of unconfirmed) {
+      b.note('MULTIPLE_LIVE_ORIGINS', verdict.comparable
+        ? `${v.url} answers 200 without redirecting to ${ctx.canonicalOrigin}, but serves different content (${Math.round(verdict.similarity * 100)}% word overlap), so it is not a duplicate of this site. Recorded, not scored.`
+        : `${v.url} answers 200 without redirecting to ${ctx.canonicalOrigin}, but whether it serves this site could not be established: ${verdict.reason}. Recorded, not scored.`,
+      [vEv(v)]);
+    }
   }
   for (const v of answered) {
     const hops = v.hops || 0;

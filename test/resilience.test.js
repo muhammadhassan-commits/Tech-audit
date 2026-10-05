@@ -548,3 +548,77 @@ test('severities: findings that are not failures are not graded as failures', as
   // A third-party SERP sample must not be able to cap an audit.
   assert.ok(!grade('SITE_NOT_IN_INDEX').includes('CRITICAL'));
 });
+
+
+// ── §3 Soft 404 ──────────────────────────────────────────────────────────
+// A 200 on a URL that cannot exist is the signature of a soft 404 — but only when the body is the
+// site answering. A bot challenge is served with 200 too, and reporting that as a soft-404
+// configuration describes the auditor being challenged, not the site.
+
+test('soft 404: a challenge on the missing-URL probe is not reported as a soft 404', async () => {
+  const CHALLENGE = `<!doctype html><html><head><title>One moment, please...</title></head>
+    <body><script src="/cdn-cgi/challenge-platform/h/b/orchestrate"></script></body></html>`;
+  const REAL = `<!doctype html><html lang=en><head><title>Acme</title></head><body><main>
+    <h1>Acme</h1><p>${'word '.repeat(150)}</p></main></body></html>`;
+
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    // The probe path is a random hex string; answer it with a challenge, everything else normally.
+    if (/audit-404-probe/.test(req.url)) {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end(CHALLENGE);
+    }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(REAL);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const c13 = report.results.filter((r) => r.check_id === 'C-1.3');
+    const blob = JSON.stringify(c13);
+    assert.ok(blob.includes('ACCESS_CHALLENGE_INTERFERED'),
+      'the challenge on the probe should be recorded as interference');
+    // Assert on the finding, not on prose: the PASS explanation legitimately mentions soft 404s.
+    const codes = c13.flatMap((r) => [r.reason_code, ...(r.sub_findings || []).map((x) => x.reason_code)]);
+    assert.ok(!codes.includes('SOFT_404_HANDLING'),
+      'a challenge must not produce the soft-404 finding');
+  } finally {
+    server.close();
+  }
+});
+
+test('soft 404: a genuine 200 on a missing URL is still reported, and says what the body was', async () => {
+  const NOT_FOUND_PAGE = `<!doctype html><html lang=en><head><title>Page not found</title></head>
+    <body><main><h1>Page not found</h1><p>The page you requested doesn't exist.
+    ${'Try the menu above. '.repeat(40)}</p></main></body></html>`;
+  const REAL = `<!doctype html><html lang=en><head><title>Acme</title></head><body><main>
+    <h1>Acme</h1><p>${'word '.repeat(150)}</p></main></body></html>`;
+
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    if (/audit-404-probe/.test(req.url)) {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end(NOT_FOUND_PAGE);
+    }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(REAL);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const blob = JSON.stringify(report.results.filter((r) => r.check_id === 'C-1.3'));
+    const c13b = report.results.filter((r) => r.check_id === 'C-1.3');
+    const codes2 = c13b.flatMap((r) => [r.reason_code, ...(r.sub_findings || []).map((x) => x.reason_code)]);
+    assert.ok(codes2.includes('SOFT_404_HANDLING'), 'a real soft 404 must still be reported');
+    assert.ok(blob.includes('page not found'), 'the finding should say what the body actually was');
+    assert.ok(!blob.includes('ACCESS_CHALLENGE_INTERFERED'));
+  } finally {
+    server.close();
+  }
+});
