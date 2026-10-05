@@ -364,3 +364,99 @@ test('C-2.4: a real <main> landmark still confines content links to it', async (
   assert.equal(contextual.length, 1, 'only the link inside <main> counts');
   assert.ok(contextual[0].resolved.endsWith('/inside/'));
 });
+
+
+// ── A0 response validity ─────────────────────────────────────────────────
+// A bot challenge served with HTTP 200 used to be parsed as the page. Everything downstream then
+// described a page nobody had seen: no headings, no structured data, no content, and a CRITICAL
+// that capped the whole audit. A challenge shown to this auditor is a fact about the request, not
+// a defect in the site.
+
+const CHALLENGE_HTML = `<!doctype html><html><head><title>One moment, please...</title></head>
+  <body><div id="challenge">Enable JavaScript and cookies to continue</div>
+  <script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page"></script></body></html>`;
+
+test('A0: a challenge served with HTTP 200 is not scored as a site defect', async () => {
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    // The interstitial, with a 200, exactly as a CDN serves it.
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(CHALLENGE_HTML);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+
+    const pageChecks = report.results.filter((r) => ['C-2.3', 'C-3.1', 'C-6.1'].includes(r.check_id));
+    assert.ok(pageChecks.length, 'page checks produced results');
+    for (const r of pageChecks) {
+      assert.equal(r.status, 'NOT_TESTABLE',
+        `${r.check_id} returned ${r.status}/${r.reason_code} against a challenge page — it must not be scored`);
+      assert.equal(r.reason_code, 'ACCESS_CHALLENGE_DETECTED');
+    }
+
+    // The specific false findings this gate exists to prevent.
+    const codes = new Set(report.results.map((r) => r.reason_code));
+    for (const bad of ['NO_HEADINGS', 'RAW_CONTENT_ABSENT', 'NO_STRUCTURED_DATA']) {
+      assert.ok(!codes.has(bad), `${bad} was reported from a challenge page`);
+    }
+
+    // No page-content check may produce a CRITICAL from a challenge. (The fixture is plain HTTP
+    // on a loopback address, so C-1.3 reports TLS_INVALID; that is the test server, not the gate.)
+    const contentCritical = report.results.filter((r) => r.status === 'FAIL' && r.severity === 'CRITICAL'
+      && r.check_id !== 'C-1.3');
+    assert.equal(contentCritical.length, 0,
+      `a challenge page produced ${contentCritical.map((r) => r.check_id + '/' + r.reason_code).join(', ')}, which would cap the audit at 40%`);
+
+    // Three challenged fetches abort the run (F-RUN-5), and an aborted run is not given a score.
+    // Reporting a precise percentage computed from interstitials would be the worse outcome.
+    assert.equal(report.run.abort_reason, 'BOT_PROTECTION_DETECTED');
+    assert.equal(report.scores.verdict, 'INSUFFICIENT_EVIDENCE');
+    assert.equal(report.scores.overall_percent, null, 'no score is computed from challenge responses');
+    assert.ok((report.run.flags || []).includes('A0_ACCESS_CHALLENGE'), 'the run records why');
+  } finally {
+    server.close();
+  }
+});
+
+test('A0: a real page is unaffected by the gate', async () => {
+  const real = `<!doctype html><html lang=en><head><title>Acme Home Care</title>
+    <meta name="description" content="Home care services in Montgomery."></head>
+    <body><main><h1>Enabling Seniors to Flourish at Home</h1>
+    <h2>Dementia Care</h2><p>${'care '.repeat(120)}</p>
+    <h2>Respite Care</h2><p>${'support '.repeat(120)}</p></main></body></html>`;
+  const server = await fixture((req, res) => {
+    if (req.url === '/robots.txt') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      return res.end('User-agent: *\nAllow: /\n');
+    }
+    if (/sitemap/i.test(req.url)) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(real);
+  });
+  try {
+    const report = await runAudit(base(server), { config: CONFIG });
+    const gated = report.results.filter((r) => r.reason_code === 'ACCESS_CHALLENGE_DETECTED');
+    assert.equal(gated.length, 0, 'the gate fired on a legitimate page');
+    const headings = report.results.filter((r) => r.check_id === 'C-2.3');
+    assert.ok(headings.some((r) => r.status === 'PASS'), 'headings were evaluated on a valid page');
+  } finally {
+    server.close();
+  }
+});
+
+test('C-6.1: thin raw content is only called JavaScript-gated when rendering adds content', async () => {
+  // The reviewed audit reported "raw 8 words, rendered 8 words, therefore JavaScript-gated". If
+  // rendering adds nothing, JavaScript is not what is withholding the content.
+  const { classifyResponse } = await import('../src/net/validity.js');
+  // Guard the gate's own thresholds while we are here.
+  assert.equal(classifyResponse({ status: 200, html: CHALLENGE_HTML }).state, 'ACCESS_CHALLENGE');
+  assert.equal(classifyResponse({ status: 200, headers: { 'cf-mitigated': 'challenge' }, html: '<html><body>x</body></html>' }).state, 'ACCESS_CHALLENGE');
+  // A substantial page that merely embeds a captcha widget is still a real page.
+  const withWidget = `<html><head><title>Contact</title></head><body><h1>Contact</h1>
+    <p>${'word '.repeat(300)}</p><div class="g-recaptcha"></div></body></html>`;
+  assert.equal(classifyResponse({ status: 200, html: withWidget }).state, 'VALID_PAGE');
+});

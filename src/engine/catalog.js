@@ -36,7 +36,10 @@ export const FACTORS = [
   { id: 'C-4.1', section: '4', name: 'Core Web Vitals', scope: 'page+origin' },
   { id: 'C-5.1', section: '5', name: 'AI Crawler Access', scope: 'site' },
   { id: 'C-5.2', section: '5', name: 'JS-disabled content accessibility', scope: 'page' },
-  { id: 'C-5.3', section: '5', name: 'llms.txt', scope: 'site' },
+  // Advisory: llms.txt is a proposed convention that no search engine has adopted, and Google
+  // has said no new machine-readable AI file is required. Reported, never scored — a site is
+  // not deficient for declining to adopt something nothing consumes.
+  { id: 'C-5.3', section: '5', name: 'llms.txt', scope: 'site', advisory: true },
   {
     id: 'X-5.3b',
     section: '5',
@@ -44,7 +47,9 @@ export const FACTORS = [
     unspecified: true,
     note: 'Listed in the audit checklist, but PRD v2.0 defines no rules for llms-full.txt and the source register has no entry for it. Not evaluated and not scored.',
   },
-  { id: 'C-5.4', section: '5', name: 'AI Instructions Page', scope: 'site', note: 'Reference implementations: wellows.com/ai-info, peec.ai/ai-instructions.' },
+  // Advisory: an /ai-info or /ai-instructions page is not required by any search engine or
+  // recognised standard. Worth suggesting; not worth scoring.
+  { id: 'C-5.4', section: '5', name: 'AI Instructions Page', scope: 'site', note: 'Reference implementations: wellows.com/ai-info, peec.ai/ai-instructions.', advisory: true },
   {
     id: 'X-5.5',
     section: '5',

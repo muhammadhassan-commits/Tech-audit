@@ -7,6 +7,10 @@
 //  R-SCORE-9  a finding is scored in its report_section and in no other
 import { SECTIONS, FACTORS } from './catalog.js';
 
+// Checks whose findings are advice rather than assessment. Driven by the catalog so the two cannot
+// drift apart.
+const ADVISORY_CHECKS = new Set(FACTORS.filter((f) => f.advisory).map((f) => f.id));
+
 // Critical failures that genuinely stop a crawler reaching or indexing the site, as opposed to
 // critical failures found *during* a successful crawl.
 const CRAWL_BLOCKING = new Set([
@@ -53,9 +57,16 @@ export function computeScores(report, cfg) {
     const notApplicable = rs.filter((r) => r.status === 'NOT_APPLICABLE').length;
     const notTestable = rs.filter((r) => r.status === 'NOT_TESTABLE').length;
     const errors = rs.filter((r) => r.status === 'ERROR').length;
-    const score = eligible.length ? eligible.reduce((a, x) => a + x.points, 0) / eligible.length : null; // R-SCORE-2 mean across pages
+    // An advisory check tests a convention no search engine has adopted. Its findings are worth
+    // showing — they are real advice — but letting them move the number would mark a site down for
+    // not adopting something nothing consumes. Reported, never scored.
+    const advisory = ADVISORY_CHECKS.has(check_id);
+    const score = advisory || !eligible.length
+      ? null
+      : eligible.reduce((a, x) => a + x.points, 0) / eligible.length; // R-SCORE-2 mean across pages
     checkScores.push({
       check_id,
+      advisory,
       check_name: rs[0].check_name,
       section,
       score,
@@ -88,6 +99,7 @@ export function computeScores(report, cfg) {
       modelled: checks.some((c) => c.modelled),
       third_party: checks.some((c) => c.third_party),
       unspecified_factors: unspecified.map((f) => ({ id: f.id, name: f.name, note: f.note })),
+      advisory_factors: FACTORS.filter((f) => f.section === s.id && f.advisory).map((f) => ({ id: f.id, name: f.name })),
       checks: checks.map((c) => c.check_id),
     };
   });

@@ -16,6 +16,7 @@
 
 export const FIX_KIND = {
   EXACT: 'Ready to use — generated from this page',
+  TEMPLATE: 'Template — fill in the marked values first',
   GUIDANCE: 'What to do — adapt the wording to your page',
 };
 
@@ -284,9 +285,14 @@ export const FIXES = {
 /** The fix for a finding, or null when none is registered. */
 export function fixFor(result) {
   if (result?.remediation?.proposed) {
+    // A block carrying placeholders is not ready to use, whatever the engine called it. Checking
+    // the code itself means a mislabelled remediation cannot present one as the other — which is
+    // how "<REQUIRED — supply value>" ends up live on a site.
+    const isTemplate = result.remediation.confidence === 'TEMPLATE'
+      || /<REQUIRED/.test(String(result.remediation.proposed));
     return {
-      kind: 'EXACT',
-      label: FIX_KIND.EXACT,
+      kind: isTemplate ? 'TEMPLATE' : 'EXACT',
+      label: isTemplate ? FIX_KIND.TEMPLATE : FIX_KIND.EXACT,
       why: null,
       how: result.remediation.action,
       code: result.remediation.proposed,

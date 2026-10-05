@@ -698,11 +698,14 @@ function renderFactor(factor, results, report) {
 
   const chk = report.scores.checks.filter((c) => c.check_id === factor.id);
   const worst = results.filter((r) => ['FAIL', 'WARN', 'PASS'].includes(r.status)).reduce((a, r) => (['FAIL', 'WARN', 'PASS'].indexOf(r.status) < ['FAIL', 'WARN', 'PASS'].indexOf(a) ? r.status : a), null);
-  const status = factor.unspecified ? 'UNSPECIFIED' : worst || results[0]?.status || 'NOT_TESTABLE';
+  // An advisory factor tests a convention no search engine has adopted, so it is reported and never
+  // scored. It is labelled as such rather than wearing a PASS/WARN pill, which would imply the site
+  // was being marked on it.
+  const status = factor.unspecified ? 'UNSPECIFIED' : factor.advisory ? 'ADVISORY' : worst || results[0]?.status || 'NOT_TESTABLE';
   const sev = results.find((r) => r.status === worst && r.severity)?.severity;
   header.appendChild(statusPill(status, sev));
   const scoreVal = chk.length ? chk.reduce((a, c) => a + (c.score ?? 0), 0) / chk.filter((c) => c.score != null).length : null;
-  header.appendChild(el('span', 'factor-score', factor.unspecified || !chk.length || Number.isNaN(scoreVal) ? '—' : pct(scoreVal)));
+  header.appendChild(el('span', 'factor-score', factor.unspecified || factor.advisory || !chk.length || Number.isNaN(scoreVal) ? '—' : pct(scoreVal)));
   header.appendChild(refBtn({ check_id: factor.id }));
   wrap.appendChild(header);
 

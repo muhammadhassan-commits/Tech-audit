@@ -4051,6 +4051,109 @@ its own — which is why X-1.8-b rests on GSO and GSC.
 **X-5.3b (LLms-full.txt)** and **X-5.5 (Common Crawl presence)** remain listed, displayed and never
 scored. Neither has conditions or a registered source, and ADD-7's requirement stands for both.
 
+
+---
+
+## **ADD-10 — A0 Response Validity, and the corrections that follow from it**
+
+Raised in external review of the 2026-10-02 run. The review's central claim was verified against the
+code before any of this was written, and the mechanism found: `detectBotProtection` tested the
+status **before** looking at the body, so only 403/429/503 were ever examined. A Cloudflare
+interstitial is served with **HTTP 200**, which meant the most common challenge of all was never
+inspected — it arrived looking like a successful fetch and was parsed as the homepage.
+
+### **ADD-10.1 — The gate (R-A0-9 … R-A0-12)**
+
+* **R-A0-9 — every fetched page carries a validity verdict** before anything parses its DOM, one of:
+  `VALID_PAGE`, `ACCESS_CHALLENGE`, `ERROR_DOCUMENT`, `EMPTY_OR_TRUNCATED`, `UNKNOWN_RESPONSE`.
+
+* **R-A0-10 — detection uses several independent signals**, never one string: vendor challenge
+  headers (`cf-mitigated`, `x-datadome`, `x-iinfo`, `x-sucuri-id`); interstitial titles; vendor asset
+  paths (`challenge-platform`, `cf-chl-`, `turnstile`, `g-recaptcha`, `hcaptcha`); and verification
+  phrases **only in combination with a thin body**. A substantial page carrying a captcha widget on
+  a contact form is a real page, and must not be set aside as a challenge.
+
+* **R-A0-11 — a response that is not `VALID_PAGE` does not run page-content checks.** They return
+  **NOT\_TESTABLE** with `ACCESS_CHALLENGE_DETECTED`, `RESPONSE_NOT_PAGE_CONTENT` or
+  `RESPONSE_VALIDITY_UNKNOWN`. C-1.3 and C-1.4 are exempt: they read status lines and redirect
+  chains, which remain meaningful when the body is an interstitial.
+
+* **R-A0-12 — a challenge is never reported as a site defect.** It records that the site's edge
+  declined this request, which is a fact about the request. Converting it into an SEO finding
+  invents a problem the site does not have.
+
+**Why NOT\_TESTABLE and not a failure:** NOT\_TESTABLE is excluded from numerator and denominator
+alike (R-SCORE-1), so an auditor-side block cannot move a client's score in either direction.
+
+### **ADD-10.2 — C-6.1 may not infer JavaScript gating without comparing (R-6.1-11)**
+
+The reviewed run reported *"RAW main content 8 words, RENDERED 8 words, therefore the content is
+JavaScript-gated"*. The conclusion does not follow from the evidence: if rendering adds nothing,
+JavaScript is not what is withholding the content.
+
+* **R-6.1-11** — `RAW_CONTENT_ABSENT` (C-6.1-b, FAIL/CRITICAL) requires **both** a raw main content
+  below 50 words **and** a rendered DOM carrying at least 3× the raw count (minimum 50). Where raw
+  is thin and rendering does not materially change it, the finding is **C-6.1-p
+  `RAW_CONTENT_THIN_VALID_PAGE` (WARN/MEDIUM)**: a thin page, not a gated one. The 50-word boundary
+  and the 3× ratio are tool policy.
+
+### **ADD-10.3 — Advisory checks (R-SCORE-10)**
+
+* **R-SCORE-10** — a factor marked `advisory` in the catalogue is **reported and never scored**. Its
+  findings are excluded from the check score, from its section's mean, and from the overall number;
+  the factor is listed under `advisory_factors` and shown with an ADVISORY label rather than a
+  pass/warn pill.
+
+Currently advisory: **C-5.3 llms.txt** and **C-5.4 AI Instructions Page**. Neither is required by
+any search engine — llms.txt is a proposed convention no engine has adopted, and Google has stated
+that no new machine-readable AI file is needed. Scoring them marked a site down for declining to
+adopt something nothing consumes, while the register simultaneously recorded llms.txt as
+"Proposed — not adopted". The advice is still worth giving; the score was not.
+
+### **ADD-10.4 — Severity corrections**
+
+| Row | Was | Now | Why |
+| :---- | :---- | :---- | :---- |
+| C-3.1-b `NO_STRUCTURED_DATA` | FAIL / HIGH | **WARN / MEDIUM** | Google documents structured data as what makes a page *eligible for rich results*, not as a requirement for crawling, indexing or ranking. Absence is a missed opportunity, not a defect. |
+| X-1.8-b `SITE_NOT_IN_INDEX` | FAIL / CRITICAL | **FAIL / HIGH** | A CRITICAL caps the audit at 40. This finding rests on a third-party SERP sample of a query whose counts Google itself calls estimates — strong enough to report prominently, not strong enough to let a provider outage decide a client's headline number. |
+
+### **ADD-10.5 — A one-page sample is not a one-page website (R-2.4-11)**
+
+* **R-2.4-11** — with a single sampled page, the **page-level** link checks still run: empty anchors,
+  generic anchor text, internal `nofollow`, links to dead targets, JavaScript-only navigation,
+  absence of contextual links. Only the **link graph** is withheld, because it needs more than one
+  page, and that is recorded as `INSUFFICIENT_SAMPLE_FOR_SITEWIDE_LINK_METRICS`. Declaring the whole
+  factor NOT\_APPLICABLE discarded everything that was measurable.
+
+### **ADD-10.6 — Remediation honesty (R-3.1-22)**
+
+* **R-3.1-22** — a generated block is labelled from its **content**, not from the generator's
+  intent. A block containing `<REQUIRED — supply value>` is a **TEMPLATE** and is presented as one;
+  only a block whose every value was observed on the page is offered as ready to use. The viewer
+  re-checks the code itself, so a mislabelled remediation cannot present one as the other.
+
+* **R-3.1-23 — no dangling `@id`.** The generator emitted `WebPage.isPartOf → #website` without ever
+  emitting a `WebSite` node, so the reference resolved to nothing. Where a relation is declared, the
+  node it names is emitted too, or the relation is omitted. A declared relationship no consumer can
+  follow is worse than none.
+
+### **ADD-10.7 — Claims examined and not adopted**
+
+Two of the review's points did not hold against the current build, and are recorded here so they are
+not re-raised:
+
+* **"NOT\_APPLICABLE is displayed as 100%."** It is not. `pointsFor()` returns `null` for both
+  NOT\_APPLICABLE and NOT\_TESTABLE, no such result carries a score, and both are already excluded
+  from numerator and denominator under R-SCORE-1.
+
+* **"Modelled Section 6 checks caused the 40% cap."** C-6.1 is deterministic — it counts words. The
+  modelled checks are C-6.2, C-6.3 and C-6.4, none of which produced the cap. The remedy was right
+  and is implemented in ADD-10.2; the diagnosis was not.
+
+The review also proposed the C-1.2 sitemap rules, the `CANONICAL_ABSENT` grading and the Core Web
+Vitals lab separation, all of which were already implemented in ADD-8, the register, and ADD-5
+respectively. It reviewed the 2026-10-02 report and is superseded on those points.
+
 [^1]:  0-9a-f
 
 [^2]:  a-z

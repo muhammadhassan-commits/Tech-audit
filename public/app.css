@@ -133,6 +133,9 @@ main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
 .pill.FAIL { background: color-mix(in srgb, var(--fail) 16%, transparent); color: var(--fail); }
 .pill.ERROR { background: color-mix(in srgb, var(--modelled) 18%, transparent); color: var(--modelled); }
 .pill.NOT_APPLICABLE, .pill.NOT_TESTABLE, .pill.UNSPECIFIED { background: color-mix(in srgb, var(--na) 18%, transparent); color: var(--muted); }
+/* Advisory and unspecified factors are reported, never scored. Neutral styling, so neither reads
+   as a judgement on the site. */
+.pill.ADVISORY { background: color-mix(in srgb, var(--na) 18%, transparent); color: var(--muted); }
 .sev { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; color: var(--muted); }
 .sev.CRITICAL { color: var(--critical); }
 .sev.HIGH { color: var(--fail); }
@@ -273,6 +276,8 @@ a { color: var(--accent); }
 .fix-kind { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
 .fix-kind.EXACT { background: color-mix(in srgb, var(--pass) 16%, transparent); color: var(--pass); }
 .fix-kind.GUIDANCE { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.fixbox.TEMPLATE { border-left: 3px solid var(--warn); }
+.fix-kind.TEMPLATE { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
 .fix-why { margin: 0 0 6px; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .fix-how { margin: 0; font-size: 13.5px; line-height: 1.55; }
 .fix-code-label { margin-top: 9px; font-size: 11.5px; color: var(--muted); }
@@ -386,6 +391,7 @@ a { color: var(--accent); }
   /* The fix is the reason the report exists, so it keeps its weight. */
   .fixbox { margin: 0 9px 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent); break-inside: avoid; }
   .fixbox.EXACT { border-left-color: var(--pass); }
+  .fixbox.TEMPLATE { border-left-color: var(--warn); }
   .fix-kind { border: 1px solid currentColor; padding: 1px 6px; }
   .fix-code { max-height: none; overflow: visible; font-size: 7.5pt; line-height: 1.4; border: 1px solid var(--line); break-inside: auto; }
   .lab-fallback { margin: 0 9px 8px; break-inside: avoid; }

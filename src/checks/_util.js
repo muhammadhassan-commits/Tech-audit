@@ -3,6 +3,19 @@
 import { ResultBuilder, errorResult, ev } from '../engine/result.js';
 import { renderCaveat } from '../discovery/acquire.js';
 
+// A0 states map to the reason code the reader sees. Each says what was observed, not what the site
+// did wrong, because none of these are findings about the site.
+const VALIDITY_REASON = {
+  ACCESS_CHALLENGE: 'ACCESS_CHALLENGE_DETECTED',
+  ERROR_DOCUMENT: 'RESPONSE_NOT_PAGE_CONTENT',
+  EMPTY_OR_TRUNCATED: 'RESPONSE_NOT_PAGE_CONTENT',
+  UNKNOWN_RESPONSE: 'RESPONSE_VALIDITY_UNKNOWN',
+};
+
+// C-1.3 reads status lines and C-1.4 reads redirect chains; neither depends on the DOM, so both
+// remain meaningful when the body is a challenge. Everything else is gated.
+const PAGE_CONTENT_EXEMPT = new Set(['C-1.3', 'C-1.4']);
+
 export async function forEachPage(ctx, checkId, fn, { includeUnresponsive = false } = {}) {
   const out = [];
   for (const page of ctx.pages) {
@@ -11,6 +24,19 @@ export async function forEachPage(ctx, checkId, fn, { includeUnresponsive = fals
       if (page.not_responding && !includeUnresponsive) {
         b.notTestable('PAGE_NOT_RESPONDING', notRespondingText(page));
         b.addEvidence(notRespondingEvidence(page));
+      } else if (page.validity && page.validity.state !== 'VALID_PAGE' && !PAGE_CONTENT_EXEMPT.has(checkId)) {
+        // A0: the fetched response is not the requested page, so nothing read from its DOM says
+        // anything about the site. A challenge shown to this auditor is a fact about the request,
+        // not a defect in the page, and scoring it would be inventing a finding.
+        b.notTestable(VALIDITY_REASON[page.validity.state] || 'RESPONSE_VALIDITY_UNKNOWN', `${page.validity.reason} Page-content checks were not run against it.`);
+        b.addEvidence(ev({
+          kind: 'http_status',
+          source_url: page.finalUrl || page.url,
+          fetch_profile: 'RAW',
+          selector_or_key: 'A0 response validity',
+          observed_value: `${page.validity.state} — ${page.validity.signals.join('; ')}`,
+          expected_value: 'VALID_PAGE',
+        }));
       } else {
         await fn(page, b);
       }

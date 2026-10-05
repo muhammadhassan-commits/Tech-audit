@@ -3,6 +3,7 @@
 // when elapsed + render.budget_ms fits inside net.url_budget_ms (R-FETCH-2).
 import { bodyText } from '../net/http.js';
 import { extractFacts, hasClientRenderingSignature } from '../parse/html.js';
+import { classifyResponse } from '../net/validity.js';
 import { normalizeUrl } from '../parse/url.js';
 
 export async function acquirePages(ctx) {
@@ -56,6 +57,14 @@ export async function acquirePages(ctx) {
       continue;
     }
     const ct = String(raw.headers?.['content-type'] || '');
+    // A0: decide whether this response is the requested page before anything parses its DOM.
+    // A challenge or error document that arrived with HTTP 200 would otherwise be read as the page.
+    page.validity = classifyResponse({ status: raw.status, headers: raw.headers, html: rawHtml, contentType: ct });
+    if (page.validity.state !== 'VALID_PAGE') {
+      ctx.flags.add(`A0_${page.validity.state}`);
+      ctx.derived.invalidResponses = (ctx.derived.invalidResponses || []);
+      ctx.derived.invalidResponses.push({ url: finalUrl, state: page.validity.state, reason: page.validity.reason, signals: page.validity.signals });
+    }
     page.is_html = !ct || /html|xml/i.test(ct);
     page.is_pdf = /application\/pdf/i.test(ct);
     page.rawFacts = extractFacts(rawHtml, finalUrl, ctx.canonicalOrigin);

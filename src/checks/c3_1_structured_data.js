@@ -356,13 +356,48 @@ function correctedFragment(ctx, page, n, missing) {
     else if (key === 'isPartOf') v = { '@id': `${ctx.canonicalOrigin}/#website` };
     node[key] = v ?? '<REQUIRED — supply value>';
   }
-  return { action: `Add the missing field(s) ${missing.join(', ')} to the existing ${n.def.label} node (modify the existing graph; do not add a second block — F-3.1-6).`, current: n.node['@id'] || typesOf(n.node).join('/'), proposed: JSON.stringify(node, null, 2), confidence: 'DERIVED' };
+  const proposed = JSON.stringify(node, null, 2);
+  return {
+    action: `Add the missing field(s) ${missing.join(', ')} to the existing ${n.def.label} node (modify the existing graph; do not add a second block — F-3.1-6).`,
+    current: n.node['@id'] || typesOf(n.node).join('/'),
+    proposed,
+    // DERIVED means every value came from the page and the block can be used as it stands.
+    // TEMPLATE means it carries placeholders that a human must fill in first. Labelling a
+    // template as ready to use is how a placeholder ends up live on a site.
+    confidence: hasPlaceholder(proposed) ? 'TEMPLATE' : 'DERIVED',
+  };
+}
+
+/** True when a generated block still contains a value a human has to supply. */
+function hasPlaceholder(json) {
+  return /<REQUIRED/.test(String(json));
 }
 
 function remediationFor(ctx, page, ids) {
   const out = { '@context': 'https://schema.org', '@graph': [] };
   const site = detectSiteName(ctx);
   if (ids.includes('S1')) out['@graph'].push({ '@type': 'Organization', '@id': `${ctx.canonicalOrigin}/#organization`, name: site || '<REQUIRED — supply value>', url: `${ctx.canonicalOrigin}/`, logo: '<REQUIRED — supply value>' });
-  if (ids.includes('S3')) out['@graph'].push({ '@type': 'WebPage', '@id': `${page.finalUrl}#webpage`, url: page.finalUrl, name: page.rawFacts.titles[0]?.text || '<REQUIRED — supply value>', isPartOf: { '@id': `${ctx.canonicalOrigin}/#website` } });
-  return { action: 'Add a minimal JSON-LD graph (values shown are observed on the page; placeholders must be supplied).', current: null, proposed: JSON.stringify(out, null, 2), confidence: 'DERIVED' };
+  if (ids.includes('S3')) {
+    // isPartOf points at #website, so #website has to exist. A reference to an @id that appears
+    // nowhere in the graph resolves to nothing and is worse than omitting the relation: it reads
+    // as a declared relationship that no consumer can follow.
+    out['@graph'].push({
+      '@type': 'WebSite',
+      '@id': `${ctx.canonicalOrigin}/#website`,
+      url: `${ctx.canonicalOrigin}/`,
+      name: site || '<REQUIRED — supply value>',
+      ...(ids.includes('S1') ? { publisher: { '@id': `${ctx.canonicalOrigin}/#organization` } } : {}),
+    });
+    out['@graph'].push({ '@type': 'WebPage', '@id': `${page.finalUrl}#webpage`, url: page.finalUrl, name: page.rawFacts.titles[0]?.text || '<REQUIRED — supply value>', isPartOf: { '@id': `${ctx.canonicalOrigin}/#website` } });
+  }
+  const proposed = JSON.stringify(out, null, 2);
+  const template = hasPlaceholder(proposed);
+  return {
+    action: template
+      ? 'Add this JSON-LD graph once the placeholder values have been supplied. Every other value is observed on the page.'
+      : 'Add this JSON-LD graph. Every value in it is observed on the page.',
+    current: null,
+    proposed,
+    confidence: template ? 'TEMPLATE' : 'DERIVED',
+  };
 }

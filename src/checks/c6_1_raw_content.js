@@ -87,7 +87,36 @@ export async function run(ctx) {
       return;
     }
     if (words < 50) {
-      b.hit('C-6.1-b', { summary: `Main content is ${words} words in raw HTML.${hasRendered(page) ? ` The rendered DOM has ${wordCount(page.renFacts.mainText)} words, so the content is JavaScript-gated (see C-5.2).` : ''}`, evidence: [mEv], cross_references: ['C-5.2'] });
+      // Raw is thin. Whether that means the content is JavaScript-gated depends entirely on what
+      // rendering produced, and the previous wording asserted gating whenever a rendered profile
+      // existed — without comparing the two. Raw 8 / rendered 8 was reported as "JavaScript-gated",
+      // which the evidence does not support: if rendering adds nothing, JavaScript is not what is
+      // withholding the content.
+      const renderedWords = hasRendered(page) ? wordCount(page.renFacts.mainText) : null;
+      // Tool policy: rendering has to add real content, not a few words of chrome, before the
+      // gating explanation is the right one.
+      const gated = renderedWords != null && renderedWords >= Math.max(50, words * 3);
+
+      if (gated) {
+        b.hit('C-6.1-b', {
+          summary: `Main content is ${words} words in raw HTML but ${renderedWords} after rendering, so the content is JavaScript-gated: anything reading the page without running scripts sees almost nothing (see C-5.2).`,
+          evidence: [mEv],
+          cross_references: ['C-5.2'],
+        });
+      } else if (renderedWords != null) {
+        // Rendering changed nothing, so this is a thin page rather than a gated one. Reported, but
+        // not as the critical "content is absent because of JavaScript" finding.
+        b.hit('C-6.1-p', {
+          summary: `Main content is ${words} words in raw HTML and ${renderedWords} after rendering. Rendering adds nothing, so the content is not JavaScript-gated — the page itself carries very little text for a search engine or an assistant to use.`,
+          evidence: [mEv],
+        });
+      } else {
+        b.hit('C-6.1-p', {
+          summary: `Main content is ${words} words in raw HTML. No rendered profile was captured for this page, so whether scripts would add content is untested — the raw page carries very little text either way.`,
+          evidence: [mEv],
+          cross_references: ['C-5.2'],
+        });
+      }
     } else if (words < ctx.cfg.th.min_words_content_page) {
       const legitimatelyShort = ['pricing', 'other', 'author'].includes(page.page_type) && (f.tables.length > 0 || f.lists.length > 0);
       if (legitimatelyShort) b.note('RAW_CONTENT_THIN', `${words} words, which is legitimate for a ${page.page_type} page carrying a structured table or list (E-6.1-1).`);

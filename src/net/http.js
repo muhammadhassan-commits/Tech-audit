@@ -12,6 +12,7 @@ import https from 'node:https';
 import dns from 'node:dns';
 import zlib from 'node:zlib';
 import { normalizeUrl, hostOf } from '../parse/url.js';
+import { classifyResponse, VALIDITY } from './validity.js';
 
 const STAGES = ['dns', 'connect', 'tls', 'first_byte', 'body'];
 const TLS_ERROR_CODES = new Set([
@@ -518,12 +519,27 @@ export function parseRetryAfter(v) {
 }
 
 /** Interstitial detection (F-RUN-5, B-1.4-4): records the page and stops; nothing further is attempted. */
+/**
+ * Is this response a bot challenge rather than the page?
+ *
+ * The status filter below used to come first, so only 403/429/503 were examined. Cloudflare serves
+ * its "One moment, please…" interstitial with **HTTP 200**, which meant the most common challenge
+ * of all was never looked at: it passed through as a successful fetch and was parsed as the page.
+ *
+ * Classification now runs on the body regardless of status. classifyResponse carries the signal
+ * list, so this stays a thin boolean over it.
+ */
 export function detectBotProtection(record) {
   const h = record.headers || {};
   if (h['cf-mitigated'] === 'challenge') return true;
-  if (![403, 429, 503].includes(record.status)) return false;
-  const body = record.body?.subarray(0, 20000).toString('utf8') || '';
-  return /challenge-platform|captcha/i.test(body);
+  const html = record.body?.subarray(0, 60000).toString('utf8') || '';
+  const verdict = classifyResponse({
+    status: record.status,
+    headers: h,
+    html,
+    contentType: h['content-type'],
+  });
+  return verdict.state === VALIDITY.ACCESS_CHALLENGE;
 }
 
 export function bodyText(record) {

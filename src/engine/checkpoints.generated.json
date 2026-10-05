@@ -1333,9 +1333,9 @@
  },
  "C-3.1-b": {
   "check_id": "C-3.1",
-  "status": "FAIL",
-  "status_text": "FAIL",
-  "severity": "HIGH",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
   "reason_code": "NO_STRUCTURED_DATA",
   "condition": "No structured data of any kind on the page",
   "reason_text": "NO_STRUCTURED_DATA"
@@ -2372,7 +2372,7 @@
   "status_text": "FAIL",
   "severity": "CRITICAL",
   "reason_code": "RAW_CONTENT_ABSENT",
-  "condition": "Main content < 50 words in RAW",
+  "condition": "Main content < 50 words in RAW on a page that passed the A0 validity gate, AND the rendered DOM carries at least 3x the raw word count (minimum 50)",
   "reason_text": "RAW_CONTENT_ABSENT"
  },
  "C-6.1-c": {
@@ -2973,9 +2973,9 @@
   "check_id": "X-1.8",
   "status": "FAIL",
   "status_text": "FAIL",
-  "severity": "CRITICAL",
+  "severity": "HIGH",
   "reason_code": "SITE_NOT_IN_INDEX",
-  "condition": "A site: query for the canonical host returns no organic results belonging to that host",
+  "condition": "A site: query for the canonical host returns no organic result belonging to that host",
   "reason_text": "SITE_NOT_IN_INDEX"
  },
  "X-1.8-c": {
@@ -2995,5 +2995,14 @@
   "reason_code": "SITEMAP_UNAVAILABLE",
   "condition": "A sitemap endpoint responds but never reaches a successful response: a 5xx, or a redirect chain that resolves to a 4xx",
   "reason_text": "SITEMAP_UNAVAILABLE"
+ },
+ "C-6.1-p": {
+  "check_id": "C-6.1",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
+  "reason_code": "RAW_CONTENT_THIN_VALID_PAGE",
+  "condition": "Main content < 50 words in RAW on a page that passed the A0 validity gate, and rendering does not materially increase it",
+  "reason_text": "RAW_CONTENT_THIN_VALID_PAGE"
  }
 }

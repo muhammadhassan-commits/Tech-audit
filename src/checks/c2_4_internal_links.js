@@ -33,11 +33,9 @@ export async function run(ctx) {
     b.notApplicable('SINGLE_PAGE_SITE', 'Single-page website — internal links are ignored per the checklist (R-2.4-1). No sub-findings.');
     return [b.build()];
   }
-  if (ctx.sample.quality === 'SINGLE') {
-    const b = new ResultBuilder(ctx, 'C-2.4', { scope: 'site', target_url: ctx.canonicalOrigin });
-    b.notApplicable('INSUFFICIENT_SAMPLE', 'Only one page in the sample (R-2.4-1).');
-    return [b.build()];
-  }
+  // A single sampled page is not a single-page website. The link graph needs more than one page;
+  // everything else here is page-level and still measurable, so only the graph is withheld.
+  const graphAvailable = ctx.sample.quality !== 'SINGLE';
 
   // Link graph + target validation (R-2.4-4, R-2.4-8)
   const sampleUrls = new Set(ctx.pages.map((p) => p.finalUrl));
@@ -84,7 +82,11 @@ export async function run(ctx) {
 
     const broken = ctxLinks.filter((l) => validated.has(l.resolved) && validated.get(l.resolved) >= 400);
     if (broken.length) b.hit('C-2.4-c', { summary: `${broken.length} contextual link target(s) return 4xx/5xx: ${[...new Set(broken.map((l) => `${l.resolved} (${validated.get(l.resolved)})`))].join(', ')}.`, evidence: broken.map((l) => ev({ kind: 'http_status', source_url: l.resolved, fetch_profile: 'RAW', selector_or_key: `linked from ${page.finalUrl} ("${l.anchor}")`, observed_value: String(validated.get(l.resolved)) })) });
-    if (!page.isHomepage && (inDegree.get(page.finalUrl) ?? 0) === 0) b.hit('C-2.4-d', { summary: 'No other sampled page links to this page contextually. Sample-scoped only — the page may be well linked site-wide (E-2.4-3).', evidence: [linkEv] });
+    if (!graphAvailable) {
+      b.note('INSUFFICIENT_SAMPLE_FOR_SITEWIDE_LINK_METRICS', 'Only one page was sampled, so the link graph — which page links to which — could not be built. Orphan detection and site-wide link distribution are unavailable; the page-level findings below are unaffected.');
+    } else if (!page.isHomepage && (inDegree.get(page.finalUrl) ?? 0) === 0) {
+      b.hit('C-2.4-d', { summary: 'No other sampled page links to this page contextually. Sample-scoped only — the page may be well linked site-wide (E-2.4-3).', evidence: [linkEv] });
+    }
     const scored = ctxLinks.filter((l) => !/^https?:\/\//i.test(l.anchor) && !/^\d+$/.test(l.anchor) && !l.rel.includes('next') && !l.rel.includes('prev'));
     const generic = scored.filter((l) => GENERIC.test(l.anchor.trim()));
     const ratio = scored.length ? generic.length / scored.length : 0;
