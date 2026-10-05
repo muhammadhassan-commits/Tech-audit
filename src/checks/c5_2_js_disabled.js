@@ -34,12 +34,31 @@ export async function run(ctx) {
 
     const rawF = page.rawFacts;
     const renF = page.renFacts;
-    const rawText = rawF.mainText;
-    const renText = renF.mainText;
+    // Measure both profiles over the page's own declared language. A script that appends
+    // translations of prose already in the HTML has republished the content, not added any, and
+    // counting those words reports a static page as almost entirely JavaScript-gated. The filter is
+    // applied to RAW as well, so the comparison stays symmetric.
+    const rawTextAll = rawF.mainText;
+    const renTextAll = renF.mainText;
+    const rawWordsAll = wordCount(rawTextAll);
+    const renWordsAll = wordCount(renTextAll);
+
+    const rawPrimary = rawF.mainTextPrimaryLang ?? rawTextAll;
+    const renPrimary = renF.mainTextPrimaryLang ?? renTextAll;
+    // If the filter leaves too little to compare — a page declaring one language and writing in
+    // another — the unfiltered text is the honest basis, so fall back rather than divide noise.
+    const usablePrimary = wordCount(rawPrimary) >= 20 && wordCount(renPrimary) >= 20;
+    const langAlternates = usablePrimary && renWordsAll - wordCount(renPrimary) >= 20;
+
+    const rawText = usablePrimary ? rawPrimary : rawTextAll;
+    const renText = usablePrimary ? renPrimary : renTextAll;
     const rawWords = wordCount(rawText);
     const renWords = wordCount(renText);
     const ratio = rawWords / Math.max(renWords, 1);
     const similarity = jaccard(shingles(rawText), shingles(renText));
+    if (langAlternates) {
+      b.note('LANGUAGE_ALTERNATES_INJECTED', `${renWordsAll - renWords} of the ${renWordsAll} rendered words are in a language other than the page's declared "${renF.htmlLang}" — translations added by script of content already present. They are excluded from the raw/rendered comparison on both profiles, because republishing the same prose in another language is not content that JavaScript is withholding.`);
+    }
 
     // Blocks present in RENDERED but absent from RAW (R-5.2-4)
     const rawBlocks = new Set([...rawF.headings.map((h) => collapse(h.text)), ...rawF.paragraphs.map((p) => collapse(p).slice(0, 120))].filter(Boolean));
@@ -61,6 +80,7 @@ export async function run(ctx) {
       a: [rawF.links.length, renF.links.length],
     };
     b.metric('raw_words', rawWords).metric('rendered_words', renWords).metric('text_ratio', Number(ratio.toFixed(3)))
+      .metric('raw_words_all_languages', rawWordsAll).metric('rendered_words_all_languages', renWordsAll)
       .metric('content_similarity', Number(similarity.toFixed(3))).metric('element_presence', el)
       .metric('missing_blocks', missingBlocks);
     const rEv = ev({ kind: 'computed', source_url: page.finalUrl, fetch_profile: 'RAW', selector_or_key: 'text_ratio = raw_words / rendered_words', observed_value: `${rawWords} / ${renWords} = ${ratio.toFixed(2)}; 5-shingle Jaccard ${similarity.toFixed(2)}`, expected_value: '≥ 0.90' });

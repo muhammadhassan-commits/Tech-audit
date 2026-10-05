@@ -92,7 +92,13 @@ export async function run(ctx) {
       // existed — without comparing the two. Raw 8 / rendered 8 was reported as "JavaScript-gated",
       // which the evidence does not support: if rendering adds nothing, JavaScript is not what is
       // withholding the content.
-      const renderedWords = hasRendered(page) ? wordCount(page.renFacts.mainText) : null;
+      // Measured over the declared language, for the reason given in c5_2: script-injected
+      // translations of prose already in the HTML inflate the rendered count and make a static page
+      // read as gated. Falls back to the unfiltered text when the filter leaves too little.
+      const renPrimary = page.renFacts?.mainTextPrimaryLang ?? page.renFacts?.mainText;
+      const renderedWords = hasRendered(page)
+        ? (wordCount(renPrimary) >= 20 ? wordCount(renPrimary) : wordCount(page.renFacts.mainText))
+        : null;
       // Tool policy: rendering has to add real content, not a few words of chrome, before the
       // gating explanation is the right one.
       const gated = renderedWords != null && renderedWords >= Math.max(50, words * 3);

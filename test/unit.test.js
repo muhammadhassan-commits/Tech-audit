@@ -11,6 +11,7 @@ import { parseLlmsTxt } from '../src/checks/c5_3_llms_txt.js';
 import { parseBlock, hasField, invalidCasing, buildGraph, typesOf, danglingRefs } from '../src/parse/jsonld.js';
 import { pointsFor, computeScores } from '../src/engine/scoring.js';
 import { wordCount, levenshteinRatio } from '../src/parse/text.js';
+import { extractFacts } from '../src/parse/html.js';
 import { getRegister } from '../src/sources/register.js';
 import { CHECKPOINTS } from '../src/engine/result.js';
 import { selfContained, chunkRoots } from '../src/checks/c6_3_structure.js';
@@ -476,4 +477,62 @@ test('sources: the condition and its scope are always stated', () => {
   assert.equal(r.condition, 'Disallow: / applies to Googlebot (or to * with no Googlebot group)');
   assert.ok(['CONDITION', 'FACTOR'].includes(r.specificity));
   assert.equal(r.specificity, 'CONDITION', 'this row is registered against its own condition');
+});
+
+
+// ── Language alternates in the raw/rendered comparison ───────────────────
+// Found by auditing example.com, which is static and has no gated content at all: its script
+// appends Arabic, Chinese and other renderings of the one English paragraph already in the HTML.
+// Counting those words made the raw/rendered ratio 0.17 and produced two CRITICAL failures —
+// CONTENT_REQUIRES_JS and RAW_CONTENT_ABSENT — on a page where JavaScript withholds nothing.
+
+const facts = (body, lang = 'en') =>
+  extractFacts(`<!doctype html><html lang=${lang}><head><title>T</title></head><body>${body}</body></html>`,
+    'https://example.test/', 'https://example.test');
+
+test('language alternates: prose republished in another language is excluded from the comparison', () => {
+  const english = `<p>${'This domain is for use in documentation examples. '.repeat(4)}</p>`;
+  const translated = `<p lang=ar>${'نطاق للاستخدام في أمثلة التوثيق بدون إذن. '.repeat(8)}</p>`
+    + `<p lang=zh>${'该域名仅用于文档示例，无需获得许可。 '.repeat(8)}</p>`;
+
+  const raw = facts(english);
+  const ren = facts(english + translated);
+
+  // The unfiltered count is inflated by the translations, which is what produced the false verdict.
+  assert.ok(wordCount(ren.mainText) > wordCount(raw.mainText) * 2,
+    'the unfiltered rendered text should be much larger — that is the trap');
+
+  // Measured over the declared language, rendering added nothing.
+  assert.equal(wordCount(ren.mainTextPrimaryLang), wordCount(raw.mainTextPrimaryLang));
+  const ratio = wordCount(raw.mainTextPrimaryLang) / wordCount(ren.mainTextPrimaryLang);
+  assert.ok(ratio >= 0.9, `declared-language ratio should pass, got ${ratio.toFixed(2)}`);
+});
+
+test('language alternates: genuinely gated content is still detected', () => {
+  // The same shape, except the injected text is in the page's own language. This is real gating and
+  // the filter must not hide it.
+  const english = '<p>Short intro.</p>';
+  const injected = `<p>${'Everything that actually matters on this page arrives by script. '.repeat(12)}</p>`;
+
+  const raw = facts(english);
+  const ren = facts(english + injected);
+
+  assert.equal(wordCount(ren.mainTextPrimaryLang), wordCount(ren.mainText),
+    'nothing should be filtered when the injected content is in the declared language');
+  const ratio = wordCount(raw.mainTextPrimaryLang) / wordCount(ren.mainTextPrimaryLang);
+  assert.ok(ratio < 0.3, `gating should still read as gated, got ratio ${ratio.toFixed(2)}`);
+});
+
+test('language alternates: a regional subtag is the same language', () => {
+  // en-GB content on an en page is not a translation, and dropping it would under-count.
+  const f = facts('<p lang=en-GB>colour and flavour</p><p>color and flavor</p>', 'en');
+  assert.ok(f.mainTextPrimaryLang.includes('colour'), 'en-GB must count as en');
+});
+
+test('language alternates: no filter without a declared language', () => {
+  // With no <html lang>, there is no primary language to compare against, so nothing is dropped.
+  const html = '<!doctype html><html><head><title>T</title></head><body><p>one two three</p>'
+    + '<p lang=fr>un deux trois quatre</p></body></html>';
+  const f = extractFacts(html, 'https://example.test/', 'https://example.test');
+  assert.equal(f.mainTextPrimaryLang, f.mainText);
 });

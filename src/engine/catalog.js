@@ -46,7 +46,7 @@ export const FACTORS = [
   {
     id: 'X-5.3b',
     section: '5',
-    name: 'LLms-full.txt',
+    name: 'llms-full.txt',
     scope: 'site',
     advisory: true,
     note: 'Not part of the llms.txt specification and consumed by no search engine. Checked once at /llms-full.txt and reported as information; never scored.',

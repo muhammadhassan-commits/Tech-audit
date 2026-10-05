@@ -59,7 +59,11 @@ async function main() {
   for (const chk of s.checks.sort((a, b) => a.check_id.localeCompare(b.check_id))) {
     const scored = chk.per_target.filter((t) => ORDER.includes(t.status));
     const worst = scored.reduce((a, t) => (ORDER.indexOf(t.status) < ORDER.indexOf(a) ? t.status : a), 'PASS');
-    const st = chk.score == null ? (chk.not_testable ? 'NOT_TESTABLE' : 'NOT_APPLICABLE') : worst;
+    // An advisory check has no score by design, but it did run. Reporting its result as
+    // NOT_APPLICABLE says the opposite of what happened — llms-full.txt was found and passed.
+    const st = chk.advisory
+      ? (chk.worst || 'NOT_TESTABLE')
+      : chk.score == null ? (chk.not_testable ? 'NOT_TESTABLE' : 'NOT_APPLICABLE') : worst;
     console.log(`  ${chk.check_id.padEnd(7)} ${c(st.padEnd(15), STATUS_COLOR[st] || '')} ${chk.check_name.padEnd(38)} ${chk.score == null ? '—' : `${Math.round(chk.score * 100)}%`}`);
   }
   const findings = report.results.filter((r) => r.status === 'FAIL' || r.status === 'WARN');

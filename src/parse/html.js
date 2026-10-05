@@ -53,13 +53,32 @@ export function mainRegion($) {
   return { $root: $('body'), method: 'body_minus_boilerplate', undetermined: !$('body').length };
 }
 
-/** Main-content text with scripts/styles/templates/noscript and boilerplate zones removed (R-5.2-3). */
-export function mainText($, { excludeWidgets = true } = {}) {
+/** The primary subtag of a BCP-47 tag: `en-GB` and `en` both reduce to `en`. */
+const primarySubtag = (tag) => String(tag || '').trim().toLowerCase().split(/[-_]/)[0] || null;
+
+/**
+ * Main-content text with scripts/styles/templates/noscript and boilerplate zones removed (R-5.2-3).
+ *
+ * `primaryLang` additionally drops subtrees marked as a different language. A page that declares
+ * `<html lang=en>` and carries translations of the same prose in other languages has not published
+ * more content — it has published the same content again — and counting those words makes the page
+ * look as though most of it were missing from the raw HTML. example.com does exactly this: its
+ * English paragraph is in the HTML and a script appends Arabic, Chinese and other renderings of it,
+ * which read as a page that is 83% JavaScript-gated when nothing is gated at all.
+ */
+export function mainText($, { excludeWidgets = true, primaryLang = null } = {}) {
   const { $root, method } = mainRegion($);
   const clone = $root.clone();
   clone.find('script,style,template,noscript,svg,iframe').remove();
   clone.find(BOILER_TAGS).remove();
   clone.find('[role=navigation],[role=banner],[role=contentinfo],[role=complementary]').remove();
+  const want = primarySubtag(primaryLang);
+  if (want) {
+    clone.find('[lang]').each((_, el) => {
+      const got = primarySubtag($(el).attr('lang'));
+      if (got && got !== want) $(el).remove();
+    });
+  }
   if (excludeWidgets) {
     clone.find('*').each((_, el) => {
       const id = `${$(el).attr('id') || ''} ${$(el).attr('class') || ''}`;
@@ -246,6 +265,9 @@ export function extractFacts(html, url, canonicalOrigin) {
   // and, worse, let a marked-up value match itself inside its own <script> when R-3.1-8 checks
   // whether the value appears in the page's visible content.
   const main = mainText($);
+  // Same extraction, minus subtrees marked as another language. Used by the raw/rendered comparison
+  // so both profiles are measured over the page's own language; see mainText() above.
+  const mainPrimary = htmlLang ? mainText($, { primaryLang: htmlLang }) : main;
   const naive = naiveText($);
   const bodyClone = $('body').clone();
   bodyClone.find('script,style,template').remove();
@@ -327,6 +349,7 @@ export function extractFacts(html, url, canonicalOrigin) {
     headings,
     ariaHeadings,
     mainText: main.text,
+    mainTextPrimaryLang: mainPrimary.text,
     mainMethod: mainMethod,
     naiveText: naive,
     bodyText,
