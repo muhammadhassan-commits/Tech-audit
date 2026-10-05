@@ -11,7 +11,10 @@ services:
     # the container is killed mid-audit, so starter (2 GB) is the smallest plan that actually works.
     region: frankfurt
     healthCheckPath: /health
-    autoDeploy: false
+    # On: a push to main deploys itself. It was off so that a push could not change a live
+    # client-facing tool without someone choosing to; with the tool in daily use that trade stopped
+    # being worth it, and work kept sitting pushed-but-not-live.
+    autoDeploy: true
     envVars:
       - key: PORT
         value: 4317
