@@ -4241,6 +4241,64 @@ eligibility, not indexing. Each grading is recorded as tool policy in its regist
 With the A0 gate in place, `NO_HEADINGS` can now only fire on a response confirmed to be the real
 page — which is what produced it falsely before.
 
+
+---
+
+## **ADD-12 — The raw/rendered comparison is measured in one language**
+
+Found by auditing example.com during validation, not reported from outside.
+
+### **ADD-12.1 — The defect**
+
+example.com is static and gates nothing. Its HTML carries one English paragraph; `/s.js` appends
+Arabic, Chinese and other renderings of that same sentence. The raw/rendered ratio was computed over
+all of it — 25 raw words against 149 rendered — giving 0.17 and two **CRITICAL** failures,
+`CONTENT_REQUIRES_JS` (C-5.2) and `RAW_CONTENT_ABSENT` (C-6.1), on a page where JavaScript withholds
+nothing. The same shape appears on any site that loads language variants client-side.
+
+This is the familiar failure: a conclusion drawn without the evidence to support it. "Most of the
+content requires JavaScript" implies the rendered profile contains content the raw profile lacks.
+Here it contained the *same* content, written again.
+
+### **ADD-12.2 — R-5.2-11 (TOOL POLICY) — the ratio is computed within the declared language**
+
+`mainText()` accepts a primary language and removes subtrees whose `lang` differs from it;
+`extractFacts` exposes the result as `mainTextPrimaryLang`. C-5.2 and C-6.1 compute the ratio from
+that, **applying the filter to RAW as well as RENDERED**, so the two profiles are measured alike.
+
+* Comparison is on the primary subtag: `en-GB` and `en` are the same language, and dropping a
+  regional variant would under-count.
+* **No `<html lang>` → no filter.** With no declared language there is nothing to compare against,
+  so nothing is removed.
+* **Fallback.** If the filter leaves under 20 words on either side, the unfiltered text is used. A
+  page that declares one language and writes in another should not be judged on the remainder.
+* The unfiltered counts remain in the metrics as `raw_words_all_languages` and
+  `rendered_words_all_languages`, so the number that produced the old verdict is still visible.
+
+**This is tool policy, not a Google requirement.** Google has published nothing on how to count
+client-injected translations in a raw/rendered comparison. The policy is that content is measured in
+the language the page declares itself to be in.
+
+### **ADD-12.3 — `LANGUAGE_ALTERNATES_INJECTED` (note, unscored)**
+
+When 20 or more rendered words are set aside, C-5.2 records how many and why. Unscored, like
+`ACCESS_CHALLENGE_INTERFERED` (ADD-10): it describes how the measurement was taken, and is not a
+finding about the site.
+
+### **ADD-12.4 — The filter cannot hide real gating**
+
+A test asserts the complementary case: the same page shape, with the injected content in the page's
+own language, still measures below 0.3 and still reads as gated. Without it, this rule could silence
+the check it was written to correct.
+
+### **ADD-12.5 — An advisory check reports the status it reached**
+
+Advisory factors carry no score (ADD-11.4). The CLI derived its label from the score alone, so an
+advisory check that ran and passed printed as **NOT_APPLICABLE** — on llmstxt.org, `llms-full.txt`
+was found and passed while the report said it did not apply. The label now comes from the status.
+The web UI was already correct, showing **ADVISORY**. The factor was also named `LLms-full.txt`, a
+filename capitalised as prose; it is `llms-full.txt`.
+
 [^1]:  0-9a-f
 
 [^2]:  a-z
