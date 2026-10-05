@@ -4154,6 +4154,93 @@ The review also proposed the C-1.2 sitemap rules, the `CANONICAL_ABSENT` grading
 Vitals lab separation, all of which were already implemented in ADD-8, the register, and ADD-5
 respectively. It reviewed the 2026-10-02 report and is superseded on those points.
 
+
+---
+
+## **ADD-11 — Optional signals implemented, and severities corrected**
+
+Completes the external-review work. ADD-10 covered the gate and the findings that depended on it;
+this covers the checks that were never implemented and the gradings that overstated what the
+evidence supports.
+
+### **ADD-11.1 — Nothing is shown to a client as UNSPECIFIED**
+
+**X-5.3b** and **X-5.5** previously appeared in client reports as UNSPECIFIED, each with an internal
+note explaining that the PRD defined no rules for them. That is an engineering detail, not a
+finding. Both are now implemented, and both are advisory.
+
+### **ADD-11.2 — X-5.3b llms-full.txt (R-5.3b-1 … R-5.3b-3)**
+
+* **R-5.3b-1** — one GET to `/llms-full.txt` on the canonical origin, following redirects. No
+  alternative paths are probed: searching for a file nothing requires would spend an initial
+  audit's budget manufacturing a finding.
+* **R-5.3b-2 — states.** 200 with substantive non-HTML text → `LLMS_FULL_TXT_PRESENT`. 404/410 →
+  `LLMS_FULL_TXT_ABSENT`. 200 returning HTML, or a file under 20 words → `LLMS_FULL_TXT_FALLBACK`,
+  because a catch-all route answering with the homepage is not a published file. No response, 403,
+  429, 5xx or a challenge → **NOT\_TESTABLE** `LLMS_FULL_TXT_FETCH_FAILED`.
+* **R-5.3b-3** — advisory. llms-full.txt is not part of the llms.txt proposal and no search engine
+  consumes it, so absence is never a failure and nothing here enters a score. The 20-word floor is
+  tool policy.
+
+### **ADD-11.3 — X-5.5 Common Crawl presence (R-5.5-1 … R-5.5-5)**
+
+* **R-5.5-1 — the crawl release is read live** from `index.commoncrawl.org/collinfo.json`, never
+  hardcoded. Releases appear roughly monthly, and a pinned id silently reports "absent" forever
+  once it ages out.
+* **R-5.5-2 — the registrable domain** is resolved through the public suffix list, not by stripping
+  `www` (`www.example.co.uk` → `example.co.uk`).
+* **R-5.5-3 — a record counts only if** it carries `url`, `timestamp` and `filename`, **and** its
+  registrable domain matches the one requested. A CDX query can return a neighbouring domain, and
+  counting that would report someone else's capture.
+* **R-5.5-4 — the latest release, then the previous two.** Walking the whole archive would turn a
+  fast audit into a long one to answer a question that is informational either way. States:
+  `COMMON_CRAWL_PRESENT`, `COMMON_CRAWL_PRESENT_RECENTLY`, `COMMON_CRAWL_NOT_FOUND_RECENT`.
+* **R-5.5-5 — an API that did not answer is NOT\_TESTABLE**, never absence. The CDX endpoint returns
+  503/504 under load often enough that one retry with backoff is built in; a 504 was observed during
+  implementation and succeeded on retry. Reporting our own outage as the site's absence would be a
+  finding about us.
+
+**What a hit establishes, and the wording carries this every time:** that at least one URL from the
+domain was captured in that crawl. Not that a model trained on it, not that an assistant will cite
+it, not that a search engine can reach the site, and nothing about ranking. Common Crawl is an open
+web archive, not a search index and not a training manifest.
+
+### **ADD-11.4 — Advisory factors (extends R-SCORE-10)**
+
+Now advisory, reported and never scored: **C-5.3** llms.txt, **C-5.4** AI Instructions Page,
+**X-5.3b** llms-full.txt, **X-5.5** Common Crawl presence, and **X-1.8** Google Index Presence.
+
+Each tests something no search engine requires. Scoring them marked a site down for declining to
+adopt a convention nothing consumes, or — for X-1.8 — let a third-party SERP sample move a number
+its evidence cannot support.
+
+### **ADD-11.5 — Names corrected to what each check observes**
+
+| Was | Now | Why |
+| :---- | :---- | :---- |
+| Indexability | **Technical Indexability Eligibility** | The tool observes signals; it cannot see Google's index decision. Client wording is "technically eligible for indexing based on observable signals", never "Google indexes this page". |
+| Googlebot Access (using SERP) | **Google Index Presence — SERP Sample** | A `site:` query samples what Google will show. It is not a test of Googlebot's access. |
+| AI Crawler Access | **AI Crawler robots.txt Access** | Only robots.txt is read. A PASS means the file does not block the agent, not that a CDN, WAF or origin will serve it. |
+
+### **ADD-11.6 — Severities that claimed breakage**
+
+A FAIL says something is broken. None of these are.
+
+| reason\_code | Was | Now |
+| :---- | :---- | :---- |
+| `NO_HEADINGS` | FAIL / HIGH | **WARN / MEDIUM** |
+| `H1_MISSING` | FAIL / MEDIUM | **WARN / MEDIUM** |
+| `NO_STRUCTURED_DATA` | FAIL / HIGH | **WARN / MEDIUM** |
+| `MULTIPLE_LIVE_ORIGINS` | FAIL / HIGH | **WARN / HIGH** |
+| `SITE_NOT_IN_INDEX` | FAIL / CRITICAL | **WARN / HIGH**, on an advisory factor |
+
+Google requires none of them. A page without an h1 is still crawled, indexed and ranked; a site
+reachable at two origins is diluting signals rather than failing; structured data governs rich-result
+eligibility, not indexing. Each grading is recorded as tool policy in its register row.
+
+With the A0 gate in place, `NO_HEADINGS` can now only fire on a response confirmed to be the real
+page — which is what produced it falsely before.
+
 [^1]:  0-9a-f
 
 [^2]:  a-z

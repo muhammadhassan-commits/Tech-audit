@@ -334,11 +334,11 @@
  },
  "C-1.4-c": {
   "check_id": "C-1.4",
-  "status": "FAIL",
-  "status_text": "FAIL",
+  "status": "WARN",
+  "status_text": "WARN",
   "severity": "HIGH",
   "reason_code": "MULTIPLE_LIVE_ORIGINS",
-  "condition": "≥ 2 origin variants return 200 without converging",
+  "condition": "Two or more origin variants serve equivalent real content and none redirects to a single preferred origin",
   "reason_text": "MULTIPLE_LIVE_ORIGINS"
  },
  "C-1.4-d": {
@@ -1108,11 +1108,11 @@
  },
  "C-2.3-b": {
   "check_id": "C-2.3",
-  "status": "FAIL",
-  "status_text": "FAIL",
+  "status": "WARN",
+  "status_text": "WARN",
   "severity": "MEDIUM",
   "reason_code": "H1_MISSING",
-  "condition": "No h1 in RAW or RENDERED",
+  "condition": "No h1 in RAW or RENDERED on a page that passed the A0 validity gate",
   "reason_text": "H1_MISSING"
  },
  "C-2.3-c": {
@@ -1216,12 +1216,12 @@
  },
  "C-2.3-n": {
   "check_id": "C-2.3",
-  "status": "FAIL",
-  "status_text": "FAIL",
-  "severity": "HIGH",
+  "status": "WARN",
+  "status_text": "WARN",
+  "severity": "MEDIUM",
   "reason_code": "NO_HEADINGS",
-  "condition": "Zero headings of any level",
-  "reason_text": "NO_HEADINGS — cross-reference C-6.3"
+  "condition": "Zero headings of any level on a page that passed the A0 validity gate",
+  "reason_text": "NO_HEADINGS"
  },
  "C-2.3-o": {
   "check_id": "C-2.3",
@@ -2971,8 +2971,8 @@
  },
  "X-1.8-b": {
   "check_id": "X-1.8",
-  "status": "FAIL",
-  "status_text": "FAIL",
+  "status": "WARN",
+  "status_text": "WARN",
   "severity": "HIGH",
   "reason_code": "SITE_NOT_IN_INDEX",
   "condition": "A site: query for the canonical host returns no organic result belonging to that host",
@@ -3004,5 +3004,77 @@
   "reason_code": "RAW_CONTENT_THIN_VALID_PAGE",
   "condition": "Main content < 50 words in RAW on a page that passed the A0 validity gate, and rendering does not materially increase it",
   "reason_text": "RAW_CONTENT_THIN_VALID_PAGE"
+ },
+ "X-5.3b-a": {
+  "check_id": "X-5.3b",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "LLMS_FULL_TXT_PRESENT",
+  "condition": "/llms-full.txt returns 200 with substantive non-HTML text",
+  "reason_text": "LLMS_FULL_TXT_PRESENT"
+ },
+ "X-5.3b-b": {
+  "check_id": "X-5.3b",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "LLMS_FULL_TXT_ABSENT",
+  "condition": "/llms-full.txt returns 404 or 410",
+  "reason_text": "LLMS_FULL_TXT_ABSENT"
+ },
+ "X-5.3b-c": {
+  "check_id": "X-5.3b",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "LLMS_FULL_TXT_FALLBACK",
+  "condition": "/llms-full.txt returns 200 with HTML, or with almost no content",
+  "reason_text": "LLMS_FULL_TXT_FALLBACK"
+ },
+ "X-5.3b-d": {
+  "check_id": "X-5.3b",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "LLMS_FULL_TXT_FETCH_FAILED",
+  "condition": "The request did not resolve: no response, 403, 429, 5xx, or a bot challenge",
+  "reason_text": "LLMS_FULL_TXT_FETCH_FAILED"
+ },
+ "X-5.5-a": {
+  "check_id": "X-5.5",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "COMMON_CRAWL_PRESENT",
+  "condition": "The registrable domain appears in the latest Common Crawl index",
+  "reason_text": "COMMON_CRAWL_PRESENT"
+ },
+ "X-5.5-b": {
+  "check_id": "X-5.5",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "COMMON_CRAWL_PRESENT_RECENTLY",
+  "condition": "Not in the latest index, but present in one of the previous two releases",
+  "reason_text": "COMMON_CRAWL_PRESENT_RECENTLY"
+ },
+ "X-5.5-c": {
+  "check_id": "X-5.5",
+  "status": "PASS",
+  "status_text": "PASS",
+  "severity": null,
+  "reason_code": "COMMON_CRAWL_NOT_FOUND_RECENT",
+  "condition": "No capture in the latest three Common Crawl releases",
+  "reason_text": "COMMON_CRAWL_NOT_FOUND_RECENT"
+ },
+ "X-5.5-d": {
+  "check_id": "X-5.5",
+  "status": "NOT_TESTABLE",
+  "status_text": "NOT_TESTABLE",
+  "severity": null,
+  "reason_code": "COMMON_CRAWL_API_UNAVAILABLE",
+  "condition": "The Common Crawl index did not answer: 429, 5xx, timeout, network failure, or invalid JSON",
+  "reason_text": "COMMON_CRAWL_API_UNAVAILABLE"
  }
 }

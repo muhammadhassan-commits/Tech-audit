@@ -18,6 +18,8 @@ import { LlmJudge } from '../llm/judge.js';
 import * as C11 from '../checks/c1_1_robots.js';
 import * as C12 from '../checks/c1_2_sitemap.js';
 import * as X18 from '../checks/x1_8_serp.js';
+import * as X53B from '../checks/x5_3b_llms_full.js';
+import * as X55 from '../checks/x5_5_commoncrawl.js';
 import * as C13 from '../checks/c1_3_status.js';
 import * as C14 from '../checks/c1_4_redirects.js';
 import * as C15 from '../checks/c1_5_canonical.js';
@@ -46,7 +48,7 @@ const ORDER = [
   ['C-2.1', C21], ['C-2.2', C22], ['C-2.3', C23], ['C-2.4', C24],
   ['C-3.1', C31], ['C-3.2', C32],
   ['C-4.1', C41],
-  ['C-5.1', C51], ['C-5.2', C52], ['C-5.3', C53], ['C-5.4', C54],
+  ['C-5.1', C51], ['C-5.2', C52], ['C-5.3', C53], ['X-5.3b', X53B], ['X-5.5', X55], ['C-5.4', C54],
   ['C-6.1', C61], ['C-6.2', C62], ['C-6.3', C63], ['C-6.4', C64], ['C-6.5', C65],
 ];
 const CONTROL_FILE_CHECKS = new Set(['C-1.2', 'C-5.3']); // F-RUN-6 / F-RUN-8 control-file-only set (+ C-1.1)

@@ -19,13 +19,16 @@ export const FACTORS = [
   { id: 'C-1.4', section: '1', name: 'Redirects', scope: 'site+page' },
   { id: 'C-1.5', section: '1', name: 'Canonical Tags', scope: 'page' },
   { id: 'C-1.6', section: '1', name: 'Meta Robots', scope: 'page' },
-  { id: 'C-1.7', section: '1', name: 'Indexability', scope: 'page' },
+  { id: 'C-1.7', section: '1', name: 'Technical Indexability Eligibility', scope: 'page' },
   {
     id: 'X-1.8',
     section: '1',
-    name: 'Googlebot Access (using SERP)',
+    // Renamed: a site: query samples what Google will show, which is not a test of Googlebot's
+    // access. Advisory, so it is reported and never scored — the evidence cannot carry a score.
+    name: 'Google Index Presence — SERP Sample',
     scope: 'site',
-    note: 'Asks Google whether the domain is in its index, rather than whether it could be crawled. Scored on presence only: a site: query is a sample, not an index report.',
+    advisory: true,
+    note: 'Samples whether Google returns any page from this domain. Not a crawler-access test and not an index report: Google describes site: counts as estimates. Search Console is authoritative.',
   },
   { id: 'C-2.1', section: '2', name: 'Title Tags', scope: 'page' },
   { id: 'C-2.2', section: '2', name: 'Meta Descriptions', scope: 'page' },
@@ -34,7 +37,7 @@ export const FACTORS = [
   { id: 'C-3.1', section: '3', name: 'Structured Data', scope: 'page', note: 'Validated against the fixed schema set only (schema.fixed_set).' },
   { id: 'C-3.2', section: '3', name: 'Hreflang', scope: 'site+page', note: 'Evaluated for multilingual websites only (R-3.2-1).' },
   { id: 'C-4.1', section: '4', name: 'Core Web Vitals', scope: 'page+origin' },
-  { id: 'C-5.1', section: '5', name: 'AI Crawler Access', scope: 'site' },
+  { id: 'C-5.1', section: '5', name: 'AI Crawler robots.txt Access', scope: 'site' },
   { id: 'C-5.2', section: '5', name: 'JS-disabled content accessibility', scope: 'page' },
   // Advisory: llms.txt is a proposed convention that no search engine has adopted, and Google
   // has said no new machine-readable AI file is required. Reported, never scored — a site is
@@ -44,8 +47,9 @@ export const FACTORS = [
     id: 'X-5.3b',
     section: '5',
     name: 'LLms-full.txt',
-    unspecified: true,
-    note: 'Listed in the audit checklist, but PRD v2.0 defines no rules for llms-full.txt and the source register has no entry for it. Not evaluated and not scored.',
+    scope: 'site',
+    advisory: true,
+    note: 'Not part of the llms.txt specification and consumed by no search engine. Checked once at /llms-full.txt and reported as information; never scored.',
   },
   // Advisory: an /ai-info or /ai-instructions page is not required by any search engine or
   // recognised standard. Worth suggesting; not worth scoring.
@@ -54,8 +58,9 @@ export const FACTORS = [
     id: 'X-5.5',
     section: '5',
     name: 'Common Crawl presence',
-    unspecified: true,
-    note: 'Listed in the audit checklist ("present in the latest Common Crawl data"). PRD v2.0 uses Common Crawl only as a discovery fallback (B-A1-4) and defines no presence check, conditions or reason codes. Not evaluated and not scored.',
+    scope: 'site',
+    advisory: true,
+    note: 'An open web archive. Presence confirms a page was captured; it establishes nothing about AI training, citation, or search visibility. Reported as information; never scored.',
   },
   { id: 'C-6.1', section: '6', name: 'Raw Content Availability', scope: 'page' },
   { id: 'C-6.2', section: '6', name: 'Entity Clarity', scope: 'page+site' },

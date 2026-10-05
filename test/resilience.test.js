@@ -460,3 +460,91 @@ test('C-6.1: thin raw content is only called JavaScript-gated when rendering add
     <p>${'word '.repeat(300)}</p><div class="g-recaptcha"></div></body></html>`;
   assert.equal(classifyResponse({ status: 200, html: withWidget }).state, 'VALID_PAGE');
 });
+
+
+// ── Optional / advisory signals ──────────────────────────────────────────
+// These test conventions no search engine has adopted. They are reported and never scored, so the
+// thing worth pinning is that they cannot move a number — and that absence is never a failure.
+
+async function runX53b(handler) {
+  const server = await fixture(handler);
+  try {
+    const { run } = await import('../src/checks/x5_3b_llms_full.js');
+    const { loadConfig } = await import('../src/config.js');
+    const { getRegister } = await import('../src/sources/register.js');
+    const { HttpClient } = await import('../src/net/http.js');
+    const cfg = loadConfig(CONFIG);
+    const ctx = {
+      cfg, canonicalOrigin: base(server), register: getRegister(),
+      emit() {}, derived: {}, flags: new Set(), robots: null, pages: [], sample: {}, target: {},
+    };
+    ctx.http = new HttpClient(cfg, { isBlockedForAuditor: () => false, onAbort() {} });
+    const [result] = await run(ctx);
+    return result;
+  } finally {
+    server.close();
+  }
+}
+
+const codesOf = (r) => new Set([...(r.notes || []).map((n) => n.reason_code), r.reason_code].filter(Boolean));
+
+test('X-5.3b: a missing llms-full.txt is recorded, never failed', async () => {
+  const r = await runX53b((req, res) => { res.writeHead(404); res.end(); });
+  assert.ok(codesOf(r).has('LLMS_FULL_TXT_ABSENT'));
+  assert.notEqual(r.status, 'FAIL', 'absence of an optional file must not be a failure');
+  assert.notEqual(r.status, 'WARN');
+});
+
+test('X-5.3b: HTML at /llms-full.txt is a fallback, not a published file', async () => {
+  // A catch-all route answering with the homepage is the common case, and reading it as a valid
+  // file would report a file that does not exist.
+  const r = await runX53b((req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end('<!doctype html><html><head><title>Home</title></head><body><h1>Home</h1></body></html>');
+  });
+  assert.ok(codesOf(r).has('LLMS_FULL_TXT_FALLBACK'));
+  assert.ok(!codesOf(r).has('LLMS_FULL_TXT_PRESENT'), 'HTML must not be reported as a published file');
+});
+
+test('X-5.3b: a real text file is recorded as present', async () => {
+  const r = await runX53b((req, res) => {
+    res.writeHead(200, { 'content-type': 'text/plain' });
+    res.end('# Acme\n\n' + 'This file describes the site for agents. '.repeat(10));
+  });
+  assert.ok(codesOf(r).has('LLMS_FULL_TXT_PRESENT'));
+});
+
+test('X-5.3b: a blocked or erroring request is NOT_TESTABLE, not absence', async () => {
+  const r = await runX53b((req, res) => { res.writeHead(403); res.end('denied'); });
+  assert.equal(r.status, 'NOT_TESTABLE');
+  assert.ok(codesOf(r).has('LLMS_FULL_TXT_FETCH_FAILED'));
+});
+
+test('advisory factors are reported and excluded from every score', async () => {
+  const { FACTORS } = await import('../src/engine/catalog.js');
+  const advisory = FACTORS.filter((f) => f.advisory).map((f) => f.id);
+  // These test conventions no search engine requires; scoring them would mark a site down for
+  // declining to adopt something nothing consumes.
+  for (const id of ['C-5.3', 'C-5.4', 'X-1.8', 'X-5.3b', 'X-5.5']) {
+    assert.ok(advisory.includes(id), `${id} should be advisory`);
+  }
+  // And none of them is left as an UNSPECIFIED block in the client report.
+  assert.equal(FACTORS.filter((f) => f.unspecified).length, 0,
+    'no factor may be shown to a client as UNSPECIFIED');
+});
+
+test('severities: findings that are not failures are not graded as failures', async () => {
+  const { getRegister } = await import('../src/sources/register.js');
+  const reg = getRegister();
+  const grade = (code) => {
+    const row = [...reg.checkpoints.values()].find((c) => c.reason_code === code);
+    return row ? `${row.status}/${row.severity}` : 'ABSENT';
+  };
+  // Google requires none of these; a FAIL would claim something is broken when it is not.
+  assert.equal(grade('NO_HEADINGS'), 'WARN/MEDIUM');
+  assert.equal(grade('H1_MISSING'), 'WARN/MEDIUM');
+  assert.equal(grade('NO_STRUCTURED_DATA'), 'WARN/MEDIUM');
+  assert.equal(grade('MULTIPLE_LIVE_ORIGINS'), 'WARN/HIGH');
+  // A third-party SERP sample must not be able to cap an audit.
+  assert.ok(!grade('SITE_NOT_IN_INDEX').includes('CRITICAL'));
+});
