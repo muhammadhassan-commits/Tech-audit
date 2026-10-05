@@ -284,6 +284,31 @@ a { color: var(--accent); }
    for whoever does not. */
 .rule-ref { font-size: 10.5px; color: var(--muted); font-family: var(--mono); padding: 0 12px 6px; opacity: 0.75; }
 
+/* PageSpeed Insights category scores, in PSI's own bands: under 50 poor, 50-89 needs improvement,
+   90+ good. Agentic Browsing is a count, not a percentage, so it is coloured on whether every
+   applicable check passed rather than on a threshold. */
+.lab-ff-block + .lab-ff-block { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.lab-cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 9px; }
+.lab-cat { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.lab-cat-score { font-size: 17px; font-weight: 680; font-family: var(--mono); line-height: 1.1; }
+.lab-cat-label { font-size: 10px; color: var(--muted); letter-spacing: 0.02em; text-align: center; }
+.lab-cat.good { border-color: color-mix(in srgb, var(--pass) 45%, var(--line)); }
+.lab-cat.good .lab-cat-score { color: var(--pass); }
+.lab-cat.mid { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.lab-cat.mid .lab-cat-score { color: var(--warn); }
+.lab-cat.poor { border-color: color-mix(in srgb, var(--fail) 45%, var(--line)); }
+.lab-cat.poor .lab-cat-score { color: var(--fail); }
+.lab-cat.na .lab-cat-score { color: var(--muted); }
+
+.lab-agentic { margin-top: 8px; }
+.lab-agentic > summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
+.lab-audit { display: flex; align-items: baseline; gap: 8px; margin-top: 5px; font-size: 12px; }
+.lab-audit-mark { font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; padding: 1px 6px; border-radius: 999px; }
+.lab-audit.pass .lab-audit-mark { background: color-mix(in srgb, var(--pass) 16%, transparent); color: var(--pass); }
+.lab-audit.fail .lab-audit-mark { background: color-mix(in srgb, var(--fail) 16%, transparent); color: var(--fail); }
+.lab-audit-na { margin-top: 7px; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+@media (max-width: 560px) { .lab-cat { min-width: 64px; padding: 6px 8px; } }
+
 /* ── Print / PDF export ───────────────────────────────────────────────────
    The screen view and the printed view are different documents.
 
@@ -383,6 +408,14 @@ a { color: var(--accent); }
 
   /* Link targets are printed once, after the text, since a reader cannot click paper. */
   .result .summary a[href^="http"]::after, .fix-how a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 7.5pt; color: var(--muted); word-break: break-all; }
+
+  /* The category scores are the most quotable thing in the panel, so they print. */
+  .lab-cats { gap: 6px; }
+  .lab-cat { border-color: var(--line); padding: 5px 8px; min-width: 66px; }
+  .lab-agentic { display: block !important; }
+  .lab-agentic > summary { display: none; }
+  .lab-audit { font-size: 8.5pt; }
+  .lab-audit-mark { border: 1px solid currentColor; }
 
   @page { margin: 14mm 12mm 16mm; }
 }

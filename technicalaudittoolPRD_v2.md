@@ -3801,13 +3801,36 @@ BUDGET\_EXHAUSTED — losing the entire report for the sake of one rubric.
 No change to assessment. R-4.1-9 and F-4.1-1 stand: lab data never occupies a pass/fail position,
 and a finding with no field data at any level remains **NOT\_TESTABLE** and outside the score.
 
-* **R-4.1-12 — presentation.** Where the ladder returns no field data but lab diagnostics exist, the
-  lab measurements (LCP, CLS, TBT, Speed Index and the lab performance score, per form factor) are
-  **displayed** on the finding, accompanied by a statement that they are one synthetic run from a
-  single location on a simulated device and do not determine whether the site passes Core Web
-  Vitals. They are rendered without pass / warn / fail colouring, so that no reader can mistake a
-  diagnostic for a verdict. Where field data *is* present, lab data is not surfaced in this
-  position at all.
+* **R-4.1-14 — presentation.** Lab results are **displayed** on the C-4.1 finding whenever they
+  exist, accompanied by a statement that they are one synthetic run from a single location on a
+  simulated device, that the numbers move between runs, and that none of it is scored. They are
+  rendered as a diagnostic panel without pass / warn / fail colouring, so that no reader can
+  mistake a diagnostic for a verdict.
+
+  Displayed per form factor: the four PageSpeed Insights **category scores** (Performance,
+  Accessibility, Best Practices, SEO) in PSI's own bands — under 50 poor, 50–89 needs improvement,
+  90 and above good — the **Agentic Browsing** result, and the lab Core Web Vitals measurements
+  (LCP, CLS, TBT, Speed Index).
+
+* **R-4.1-15 — the PSI request.** PageSpeed Insights returns only the `performance` category unless
+  the others are named in the request. All five are requested in the one call:
+  `performance`, `accessibility`, `best-practices`, `seo`, `agentic-browsing`.
+
+* **R-4.1-16 — Agentic Browsing is reported as a count, not a percentage.** Its checks cover the
+  agent accessibility tree, `llms.txt`, WebMCP form coverage, registered tools and schema validity,
+  and `ai-catalog.json`. Most are `notApplicable` to most sites, and a page with no WebMCP
+  integration is **not failing** those checks — it has nothing for them to read. So the result is
+  given as *passed of applicable*, with the not-applicable checks named and the reason stated. This
+  mirrors what PSI itself shows and is the only honest reading.
+
+  Because `cumulative-layout-shift` is one of the applicable checks, this count can move between
+  runs on the same page. That is a property of a single lab run, not a change in the site.
+
+* **F-4.1-9 — none of R-4.1-14's figures may enter a score.** The category scores, the Agentic
+  Browsing count and the lab metrics are lab measurements. Google's Core Web Vitals thresholds are
+  defined against the 75th percentile of real users, and the remaining categories are not field
+  measurements at all. A finding with no field data stays NOT\_TESTABLE and outside the score no
+  matter how complete the lab panel beside it is.
 
 ---
 

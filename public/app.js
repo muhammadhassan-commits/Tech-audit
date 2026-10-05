@@ -155,41 +155,106 @@ document.addEventListener('keydown', (e) => {
 });
 
 /**
- * C-4.1 falls back to lab data when an origin has too little traffic for field data. The numbers
- * are already in the report, but buried in Measurements, so the card reads as if nothing was
- * measured at all. Surface them — clearly marked, because lab data is diagnostic and must never
- * be read as a Core Web Vitals verdict (R-4.1-9 / F-4.1-1).
+ * PageSpeed Insights lab results, presented the way PSI presents them.
+ *
+ * Shown whenever lab data is present, not only when field data is missing. Core Web Vitals are a
+ * field measurement and the panel never pretends otherwise — but accessibility, best practices,
+ * SEO and the agentic-browsing checks are lab results in their own right, and withholding them
+ * because an unrelated field lookup came back empty served nobody.
+ *
+ * Nothing here is scored. These are one synthetic run from one location on one simulated device,
+ * and they are styled as a diagnostic panel so that no reader can mistake them for a verdict
+ * (R-4.1-9, F-4.1-1).
  */
 function labFallback(r) {
-  if (r.check_id !== 'C-4.1' || r.status !== 'NOT_TESTABLE' || !r.metrics) return null;
+  if (r.check_id !== 'C-4.1' || !r.metrics) return null;
   const entries = Object.entries(r.metrics).filter(([k, v]) => k.endsWith('_lab_diagnostics_only') && v);
   if (!entries.length) return null;
 
   const wrap = el('div', 'lab-fallback');
-  wrap.appendChild(el('div', 'lab-head', 'Lab data (no real-user data for this site)'));
+  const noField = r.status === 'NOT_TESTABLE';
+  wrap.appendChild(el('div', 'lab-head', noField
+    ? 'PageSpeed Insights — lab results (no real-user data for this site)'
+    : 'PageSpeed Insights — lab results'));
 
+  // PSI's own bands: under 50 poor, 50-89 needs improvement, 90 and above good.
+  const bandOf = (n) => (n == null ? 'na' : n >= 90 ? 'good' : n >= 50 ? 'mid' : 'poor');
   const ms = (n) => (n == null ? '—' : n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${Math.round(n)} ms`);
+
+  const CATEGORY_LABELS = [
+    ['performance', 'Performance'],
+    ['accessibility', 'Accessibility'],
+    ['best_practices', 'Best Practices'],
+    ['seo', 'SEO'],
+  ];
+
   for (const [key, lab] of entries) {
     const ff = key.replace('_lab_diagnostics_only', '');
-    const row = el('div', 'lab-row');
-    row.appendChild(el('span', 'lab-ff', ff));
+    const block = el('div', 'lab-ff-block');
+    block.appendChild(el('div', 'lab-ff', ff));
+
+    // ── Category scores ──────────────────────────────────────────────────
+    const cats = lab.category_scores_lab_only;
+    if (cats) {
+      const row = el('div', 'lab-cats');
+      for (const [id, label] of CATEGORY_LABELS) {
+        const v = cats[id];
+        const cell = el('div', `lab-cat ${bandOf(v)}`);
+        cell.appendChild(el('span', 'lab-cat-score', v == null ? '—' : String(v)));
+        cell.appendChild(el('span', 'lab-cat-label', label));
+        row.appendChild(cell);
+      }
+      const ag = lab.agentic_browsing;
+      if (ag && ag.applicable != null) {
+        // A count, not a percentage: most of these checks are not applicable to most sites, and a
+        // page with no WebMCP integration is not failing them — it has nothing for them to read.
+        const cell = el('div', `lab-cat ${ag.passed === ag.applicable ? 'good' : 'mid'}`);
+        cell.appendChild(el('span', 'lab-cat-score', `${ag.passed}/${ag.applicable}`));
+        cell.appendChild(el('span', 'lab-cat-label', 'Agentic Browsing'));
+        row.appendChild(cell);
+      }
+      block.appendChild(row);
+    }
+
+    // ── Core Web Vitals, measured in the lab ─────────────────────────────
     const stat = (label, value) => {
       const s = el('span', 'lab-stat');
       s.appendChild(el('span', 'lab-label', label));
       s.appendChild(el('span', 'lab-value', value));
       return s;
     };
-    row.appendChild(stat('LCP', ms(lab.lcp_ms)));
-    row.appendChild(stat('CLS', lab.cls == null ? '—' : lab.cls.toFixed(3)));
-    row.appendChild(stat('TBT', ms(lab.total_blocking_time_ms)));
-    if (lab.speed_index_ms != null) row.appendChild(stat('Speed Index', ms(lab.speed_index_ms)));
-    if (lab.performance_score_lab_only != null) row.appendChild(stat('Perf', Math.round(lab.performance_score_lab_only * 100)));
-    wrap.appendChild(row);
+    const metrics = el('div', 'lab-row');
+    metrics.appendChild(stat('LCP', ms(lab.lcp_ms)));
+    metrics.appendChild(stat('CLS', lab.cls == null ? '—' : lab.cls.toFixed(3)));
+    metrics.appendChild(stat('TBT', ms(lab.total_blocking_time_ms)));
+    if (lab.speed_index_ms != null) metrics.appendChild(stat('Speed Index', ms(lab.speed_index_ms)));
+    block.appendChild(metrics);
+
+    // ── Agentic browsing detail ──────────────────────────────────────────
+    const ag = lab.agentic_browsing;
+    if (ag && ag.audits && ag.audits.length) {
+      const det = el('details', 'lab-agentic');
+      const applicable = ag.audits.filter((x) => x.applicable);
+      const na = ag.audits.filter((x) => !x.applicable);
+      det.appendChild(el('summary', null, `Agentic browsing checks — ${ag.passed} of ${ag.applicable} passed, ${ag.not_applicable} not applicable`));
+      for (const x of applicable) {
+        const li = el('div', `lab-audit ${x.passed ? 'pass' : 'fail'}`);
+        li.appendChild(el('span', 'lab-audit-mark', x.passed ? 'PASS' : 'FAIL'));
+        li.appendChild(el('span', 'lab-audit-title', x.title));
+        det.appendChild(li);
+      }
+      if (na.length) {
+        det.appendChild(el('div', 'lab-audit-na', `Not applicable to this page: ${na.map((x) => x.title).join(', ')}. These check WebMCP and AI-catalog integrations, which this page does not use.`));
+      }
+      block.appendChild(det);
+    }
+
+    wrap.appendChild(block);
   }
 
   // Two lines, deliberately: what this is, and what it is not.
-  wrap.appendChild(el('div', 'lab-note', 'One synthetic run from a single location on a simulated device — not real visitors.'));
-  wrap.appendChild(el('div', 'lab-note', 'Diagnostic only: it does not decide whether this site passes Core Web Vitals, so it is not scored.'));
+  wrap.appendChild(el('div', 'lab-note', 'One synthetic run from a single location on a simulated device \u2014 not real visitors. The numbers move between runs.'));
+  wrap.appendChild(el('div', 'lab-note', 'Diagnostic only: none of it is scored, and it does not decide whether this site passes Core Web Vitals.'));
   return wrap;
 }
 

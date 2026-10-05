@@ -48,6 +48,9 @@ async function cruxQuery(ctx, body) {
   }
 }
 
+// Lighthouse category ids, as the API expects them.
+const PSI_CATEGORIES = ['performance', 'accessibility', 'best-practices', 'seo', 'agentic-browsing'];
+
 async function psiQuery(ctx, url, strategy) {
   const key = ctx.cfg.keys.google_api_key;
   ctx.derived.cwvCalls = (ctx.derived.cwvCalls || 0) + 1;
@@ -56,7 +59,10 @@ async function psiQuery(ctx, url, strategy) {
     const q = new URL(PSI_URL);
     q.searchParams.set('url', url);
     q.searchParams.set('strategy', strategy);
-    q.searchParams.append('category', 'performance');
+    // One request, five categories. PSI sends only 'performance' unless the rest are named, and
+    // the agentic-browsing set is the one that speaks to what this tool is for: it covers
+    // llms.txt, the agent accessibility tree and WebMCP.
+    for (const c of PSI_CATEGORIES) q.searchParams.append('category', c);
     if (key) q.searchParams.set('key', key);
     const res = await fetch(q, { signal: AbortSignal.timeout(ctx.cfg.cwv.psi_timeout_ms) });
     if (res.status === 429) return { error: 'QUOTA' };
@@ -110,7 +116,49 @@ function readLab(data) {
   const num = (id) => (a[id]?.numericValue != null ? Math.round(a[id].numericValue) : null);
   const lcpEl = a['largest-contentful-paint-element']?.details?.items?.[0]?.items?.[0]?.node?.snippet
     || a['largest-contentful-paint-element']?.details?.items?.[0]?.node?.snippet || null;
+  // Category scores, 0-100, exactly as PageSpeed Insights presents them. Lab only: they describe
+  // one synthetic run and are never scored into this audit.
+  const cats = lh.categories || {};
+  const categoryScore = (id) => (cats[id]?.score == null ? null : Math.round(cats[id].score * 100));
+
+  // Agentic browsing is reported as a count rather than a percentage, because most of its checks
+  // are not applicable to most sites — a page with no WebMCP integration is not failing those
+  // checks, it simply has nothing for them to look at. Counting passes against applicable checks
+  // is what PSI shows, and it is the honest reading.
+  const agentic = (() => {
+    const cat = cats['agentic-browsing'];
+    if (!cat) return null;
+    const audits = [];
+    for (const ref of cat.auditRefs || []) {
+      const audit = a[ref.id];
+      if (!audit) continue;
+      const applicable = audit.scoreDisplayMode !== 'notApplicable';
+      audits.push({
+        id: ref.id,
+        title: audit.title || ref.id,
+        applicable,
+        passed: applicable ? audit.score === 1 : null,
+        display_value: audit.displayValue || null,
+      });
+    }
+    const applicable = audits.filter((x) => x.applicable);
+    return {
+      score: categoryScore('agentic-browsing'),
+      passed: applicable.filter((x) => x.passed).length,
+      applicable: applicable.length,
+      not_applicable: audits.length - applicable.length,
+      audits,
+    };
+  })();
+
   return {
+    category_scores_lab_only: {
+      performance: categoryScore('performance'),
+      accessibility: categoryScore('accessibility'),
+      best_practices: categoryScore('best-practices'),
+      seo: categoryScore('seo'),
+    },
+    agentic_browsing: agentic,
     performance_score_lab_only: lh.categories?.performance?.score ?? null,
     lcp_ms: num('largest-contentful-paint'),
     total_blocking_time_ms: num('total-blocking-time'),
