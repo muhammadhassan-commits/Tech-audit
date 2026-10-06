@@ -224,6 +224,7 @@ function labFallback(r) {
       return s;
     };
     const metrics = el('div', 'lab-row');
+    if (lab.fcp_ms != null) metrics.appendChild(stat('FCP', ms(lab.fcp_ms)));
     metrics.appendChild(stat('LCP', ms(lab.lcp_ms)));
     metrics.appendChild(stat('CLS', lab.cls == null ? '—' : lab.cls.toFixed(3)));
     metrics.appendChild(stat('TBT', ms(lab.total_blocking_time_ms)));
@@ -248,6 +249,35 @@ function labFallback(r) {
       }
       block.appendChild(det);
     }
+
+    // ── Insights and Diagnostics, as PageSpeed Insights lists them ───────
+    // Lighthouse's own titles and savings text, reported verbatim. These say what to change, which
+    // the five metric numbers above never do: "LCP 6.9 s" is the symptom, "render-blocking
+    // requests" is the cause. Audits that pass outright are left out, exactly as PSI leaves them
+    // out, so the list stays the things worth looking at.
+    const auditList = (title, items) => {
+      if (!items || !items.length) return null;
+      const det = el('details', 'lab-insights');
+      const counts = { FAIL: 0, AVERAGE: 0, INFO: 0 };
+      for (const x of items) counts[x.level]++;
+      const bits = [];
+      if (counts.FAIL) bits.push(`${counts.FAIL} poor`);
+      if (counts.AVERAGE) bits.push(`${counts.AVERAGE} needs work`);
+      if (counts.INFO) bits.push(`${counts.INFO} for information`);
+      det.appendChild(el('summary', null, `${title} — ${bits.join(', ')}`));
+      for (const x of items) {
+        const li = el('div', `lab-audit ${x.level.toLowerCase()}`);
+        li.appendChild(el('span', `lab-audit-mark ${x.level.toLowerCase()}`, x.level === 'INFO' ? 'INFO' : x.level === 'FAIL' ? 'POOR' : 'FAIR'));
+        li.appendChild(el('span', 'lab-audit-title', x.title));
+        if (x.display_value) li.appendChild(el('span', 'lab-audit-value', x.display_value));
+        det.appendChild(li);
+      }
+      return det;
+    };
+    const ins = auditList('Insights', lab.insights);
+    if (ins) block.appendChild(ins);
+    const diag = auditList('Diagnostics', lab.diagnostics);
+    if (diag) block.appendChild(diag);
 
     wrap.appendChild(block);
   }

@@ -108,6 +108,42 @@ function readPsiExperience(cfg, exp) {
   return out;
 }
 
+/**
+ * The Insights and Diagnostics lists PageSpeed Insights shows under the metrics (R-4.1-9).
+ *
+ * Lighthouse tags every performance audit with a group: `metrics`, `insights`, `diagnostics` or
+ * `hidden`. PSI renders the first three and drops audits that pass outright, so the list is what is
+ * worth looking at rather than every audit that ran. The savings text ("Est savings of 115 KiB") is
+ * Lighthouse's own `displayValue` — it is reported verbatim rather than recomputed, so this tool
+ * never puts a number of its own next to Google's label.
+ *
+ * Lab only, like everything else from a single synthetic run: never scored, never a pass/fail
+ * position (F-4.1-1).
+ */
+function readAuditGroup(lh, group) {
+  const a = lh.audits || {};
+  const refs = (lh.categories?.performance?.auditRefs || []).filter((r) => r.group === group);
+  const out = [];
+  for (const ref of refs) {
+    const x = a[ref.id];
+    if (!x || x.scoreDisplayMode === 'notApplicable') continue;
+    const informative = x.scoreDisplayMode === 'informative' || x.score == null;
+    // PSI hides an audit that simply passes. Keeping them would bury the six that matter under
+    // twenty that do not.
+    if (!informative && x.score >= 0.9) continue;
+    out.push({
+      id: ref.id,
+      title: x.title || ref.id,
+      display_value: x.displayValue || null,
+      score: x.score ?? null,
+      // FAIL / AVERAGE / INFO mirror the red triangle, orange square and grey circle PSI draws.
+      level: informative ? 'INFO' : x.score < 0.5 ? 'FAIL' : 'AVERAGE',
+    });
+  }
+  const rank = { FAIL: 0, AVERAGE: 1, INFO: 2 };
+  return out.sort((x, y) => rank[x.level] - rank[y.level]);
+}
+
 /** R-4.1-9 — lab audits are extracted for diagnosis only and never occupy a pass/fail position. */
 function readLab(data) {
   const lh = data?.lighthouseResult;
@@ -160,6 +196,8 @@ function readLab(data) {
     },
     agentic_browsing: agentic,
     performance_score_lab_only: lh.categories?.performance?.score ?? null,
+    // PSI shows five metrics; first-contentful-paint was the one we were dropping.
+    fcp_ms: num('first-contentful-paint'),
     lcp_ms: num('largest-contentful-paint'),
     total_blocking_time_ms: num('total-blocking-time'),
     cls: a['cumulative-layout-shift']?.numericValue ?? null,
@@ -169,6 +207,9 @@ function readLab(data) {
     unsized_images: (a['unsized-images']?.details?.items || []).slice(0, 5).map((i) => i.url).filter(Boolean),
     long_tasks: (a['long-tasks']?.details?.items || []).length,
     third_party_kb: a['third-party-summary']?.details?.items ? Math.round((a['third-party-summary'].details.items.reduce((s, i) => s + (i.transferSize || 0), 0)) / 1024) : null,
+    insights: readAuditGroup(lh, 'insights'),
+    diagnostics: readAuditGroup(lh, 'diagnostics'),
+    form_factor: lh.configSettings?.formFactor || null,
     lighthouse_version: lh.lighthouseVersion || null,
     fetch_time: lh.fetchTime || null,
   };
