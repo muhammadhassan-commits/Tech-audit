@@ -3,7 +3,7 @@
 // when elapsed + render.budget_ms fits inside net.url_budget_ms (R-FETCH-2).
 import { bodyText } from '../net/http.js';
 import { extractFacts, hasClientRenderingSignature } from '../parse/html.js';
-import { classifyResponse } from '../net/validity.js';
+import { classifyResponse, VALIDITY } from '../net/validity.js';
 import { normalizeUrl } from '../parse/url.js';
 
 export async function acquirePages(ctx) {
@@ -96,6 +96,37 @@ export async function acquirePages(ctx) {
     if (rendered) {
       page.rendered = rendered;
       page.renFacts = extractFacts(rendered.html, normalizeUrl(rendered.final_url) || finalUrl, ctx.canonicalOrigin);
+
+      // A0, reconsidered. The gate reads the raw response, and a client-rendered app legitimately
+      // serves an empty shell there — no title, no headings, no text. That is indistinguishable
+      // from a truncated or unrecognisable response until the page is rendered, at which point it
+      // is no longer in doubt: we are holding the DOM. Leaving the raw verdict standing would gate
+      // every page check on a site that rendered perfectly well, which is a statement about our
+      // fetch rather than about the site.
+      //
+      // Only the two "we could not tell" states are upgraded. A challenge or an error document is
+      // not in doubt, and passing a challenge during render would mean auditing a page that a
+      // crawler without JavaScript never receives.
+      const UPGRADABLE = new Set([VALIDITY.EMPTY_OR_TRUNCATED, VALIDITY.UNKNOWN_RESPONSE]);
+      if (UPGRADABLE.has(page.validity?.state)) {
+        const renVerdict = classifyResponse({
+          status: rendered.status ?? raw.status,
+          headers: raw.headers,
+          html: rendered.html,
+          contentType: ct,
+        });
+        if (renVerdict.state === VALIDITY.VALID_PAGE) {
+          ctx.flags.delete(`A0_${page.validity.state}`);
+          ctx.derived.invalidResponses = (ctx.derived.invalidResponses || [])
+            .filter((x) => x.url !== finalUrl);
+          page.validity = {
+            ...renVerdict,
+            reason: `the raw response was ${page.validity.state.toLowerCase().replace(/_/g, ' ')}, but rendering produced the page (client-rendered)`,
+            upgraded_from: page.validity.state,
+          };
+          ctx.flags.add('A0_VALID_AFTER_RENDER');
+        }
+      }
     }
     pages.push(page);
   }
