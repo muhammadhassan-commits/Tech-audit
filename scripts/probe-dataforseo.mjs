@@ -94,8 +94,11 @@ if (renItem) {
 show('cost (USD)', renTask.json?.tasks?.[0]?.cost ?? renTask.json?.cost ?? '?');
 
 // ── 4. The decisive question: is the stored HTML post-JavaScript? ───────
-async function rawHtml(label) {
-  const r = await call('/on_page/raw_html', [{ url: TARGET }]);
+async function rawHtml(label, taskId) {
+  // The id of the task that stored the HTML. Without it the endpoint answers "Task Not Found",
+  // because a Live method's results are filed under its own task, not under the URL alone.
+  const body = taskId ? { id: taskId, url: TARGET } : { url: TARGET };
+  const r = await call('/on_page/raw_html', [body]);
   const html = r.json?.tasks?.[0]?.result?.[0]?.items?.[0]?.html;
   console.log(`\n[raw_html after ${label}]   (${r.ms} ms, cost ${r.json?.tasks?.[0]?.cost ?? '?'})`);
   if (!html) {
@@ -110,7 +113,8 @@ async function rawHtml(label) {
   return { html, words: bodyText.split(' ').filter(Boolean).length };
 }
 
-const after = await rawHtml('the JavaScript-enabled call');
+const after = await rawHtml('the JavaScript-enabled call', renTask.json?.tasks?.[0]?.id);
+const before = await rawHtml('the JavaScript-disabled call', rawTask.json?.tasks?.[0]?.id);
 
 console.log(`\n${'-'.repeat(68)}\nVERDICT`);
 if (!after) {
