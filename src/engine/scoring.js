@@ -148,6 +148,12 @@ export function computeScores(report, cfg) {
   if (untestable.length) caveats.push(`${untestable.length} check(s) were not testable and are excluded from every score; they are listed separately.`);
   if (report.run.capabilities && !report.run.capabilities.render_js) caveats.push('Rendering was unavailable for this run: raw HTML only, JavaScript-injected values not evaluated.');
   if (suppressed) caveats.push(`Overall score suppressed: ${Math.round(untestableShare * 100)}% of in-scope checks were not testable (R-SCORE-6). A score computed over a quarter-blind audit is worse than no score.`);
+  // Without this, a proxied fetch silently changes what several findings mean. A site that blocks
+  // identified crawlers looks reachable here, and "no access challenge" stops being evidence that
+  // there is none - so the reader is told how the pages were obtained.
+  if (report.run.flags?.includes?.('FETCH_VIA_PROXY_TRANSPORT')) {
+    caveats.push('Pages were fetched through a third-party proxy service rather than directly, so that an identified auditor on a datacentre address is not blocked. This reports what that service received: a site that refuses ordinary crawlers may still appear reachable here, and response headers — including X-Robots-Tag — were not returned by it.');
+  }
 
   // Error distribution for the dashboard (counts by status, severity, section and reason code).
   const distribution = errorDistribution(results);

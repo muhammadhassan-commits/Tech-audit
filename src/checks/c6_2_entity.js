@@ -2,7 +2,7 @@
 // R-6.2-5 is a proxy for "the page declares its subject", not a topical-relevance model.
 // F-6.2-3: no claim is ever made about how an AI system resolves this entity.
 import { ResultBuilder, ev, errorResult } from '../engine/result.js';
-import { forEachPage } from './_util.js';
+import { forEachPage, renderedDomObservable} from './_util.js';
 import { collapse, significantTokens, jaccard, shingles, sentences, isMostlyNonLatin } from '../parse/text.js';
 import { detectSiteName, normName } from './_sitename.js';
 import { MODELLED_CAVEAT, NON_DETERMINISTIC_CAVEAT, RAW_ONLY_CAVEAT } from '../llm/judge.js';
@@ -164,6 +164,10 @@ export async function run(ctx) {
     // R-6.2-7 author attribution
     if (['blog_article', 'blog_template_alt'].includes(page.page_type)) {
       const visibleAuthor = /\b(by|written by|author)\s*:?\s+[A-Z][\p{L}'-]+/u.test(page.rendered?.dom?.visibleText || f.bodyText) || !!f.og['article:author'];
+      // Without a browser this is textContent, not innerText: it includes text a reader cannot see.
+      if (!renderedDomObservable(page)) {
+        b.note('VISIBLE_TEXT_APPROXIMATED', 'Author presence was read from the page’s text content rather than from what a browser renders, because this run had no browser. Text hidden by CSS counts as present here, so a byline in collapsed or off-screen markup may be credited as visible.');
+      }
       b.metric('author_named', visibleAuthor);
       if (!visibleAuthor) b.hit('C-6.2-f', { summary: 'Article with no author named in visible text.', evidence: [sEv], cross_references: ['C-3.1'] });
     }

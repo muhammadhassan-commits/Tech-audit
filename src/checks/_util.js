@@ -106,4 +106,24 @@ export function matchesAny(url, paths = []) {
   }
 }
 
+/**
+ * Did we see this response's headers at all?
+ *
+ * A proxy transport returns the page but not the headers it arrived with. The difference matters
+ * because most header tests read as an absence: `/noindex/.test(headers['x-robots-tag'] || '')` is
+ * false both when the header says nothing and when we never saw any headers. The first is a fact
+ * about the site; the second is a fact about how we fetched it, and reporting it as the first turns
+ * a page that is noindex by header into a page we call indexable.
+ */
+export const headersObservable = (rec) => !rec?.headers_unavailable;
+
+/**
+ * Did we observe the page the way a browser renders it?
+ *
+ * Without a browser there is no innerText, and innerText is the only thing that answers "what can a
+ * reader see without interacting with the page" - a collapsed accordion, a hidden tab, a panel set
+ * to display:none. That is a question about layout, and no amount of HTML parsing settles it.
+ */
+export const renderedDomObservable = (page) => !!page?.rendered?.dom;
+
 export { ev };

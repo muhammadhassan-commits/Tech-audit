@@ -1,6 +1,6 @@
 // C-1.6 — Meta Robots (page · RAW and RENDERED + X-Robots-Tag). Sources kept separate (F-1.6-3).
 import { ev } from '../engine/result.js';
-import { forEachPage, hasRendered, domEv, matchesAny } from './_util.js';
+import { forEachPage, hasRendered, domEv, matchesAny, headersObservable } from './_util.js';
 
 const RECOGNISED = new Set(['all', 'noindex', 'nofollow', 'none', 'nosnippet', 'indexifembedded', 'notranslate', 'noimageindex', 'index', 'follow']);
 const PARAM = /^(max-snippet|max-image-preview|max-video-preview|unavailable_after)\s*:/i;
@@ -63,7 +63,14 @@ export async function run(ctx) {
   const results = await forEachPage(ctx, 'C-1.6', async (page, b) => {
     const f = page.rawFacts;
     const url = page.finalUrl;
-    const xrt = parseXRobots(page.raw.headers?.['x-robots-tag']);
+    // X-Robots-Tag carries the same directives as the meta tag and overrides nothing - either can
+    // make a page noindex on its own. When the transport does not return headers we have not seen
+    // one half of the answer, and an absent header is indistinguishable from an unseen one.
+    const headersSeen = headersObservable(page.raw);
+    if (!headersSeen) {
+      b.note('X_ROBOTS_TAG_UNOBSERVABLE', 'Response headers were not returned by the fetch transport, so X-Robots-Tag could not be read. A page can be noindex by header alone with nothing in the HTML to show it, so the directives below are what the markup says, not necessarily what the page resolves to.');
+    }
+    const xrt = headersSeen ? parseXRobots(page.raw.headers?.['x-robots-tag']) : [];
     const headerTokens = xrt.filter((x) => !x.agent || x.agent === 'googlebot').flatMap((x) => x.directives);
     const metaTok = metaTokens(f);
     const effective = [...metaTok, ...headerTokens];

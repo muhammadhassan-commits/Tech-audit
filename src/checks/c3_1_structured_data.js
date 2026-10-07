@@ -1,7 +1,7 @@
 // C-3.1 — Structured Data (page · RAW and RENDERED). Validates ONLY schema.fixed_set (F-3.1-1);
 // everything else is inventoried. Required-field lists are this tool's policy where Google has none.
 import { ev } from '../engine/result.js';
-import { forEachPage, hasRendered, domEv, jsCaveat, sampleSize } from './_util.js';
+import { forEachPage, hasRendered, domEv, jsCaveat, sampleSize, renderedDomObservable} from './_util.js';
 import { parseBlock, buildGraph, typesOf, danglingRefs, hasField, invalidCasing, placeholderValues, isIsoDate, asArray } from '../parse/jsonld.js';
 import { collapse, significantTokens } from '../parse/text.js';
 import { detectSiteName, normName } from './_sitename.js';
@@ -177,8 +177,15 @@ export async function run(ctx) {
         const onPage = (q) => visible.includes(collapse(q.name).toLowerCase().slice(0, 60));
         const notVisible = qs.filter((q) => q.name && !onPage(q));
         if (notVisible.length) b.hit('C-3.1-u', { summary: `${notVisible.length} FAQ question(s) in markup do not appear in the page's content — violates Google's structured-data content policy. ${FAQ_NOTE}`, evidence: notVisible.slice(0, 5).map((q) => ev({ kind: 'dom_node', source_url: url, fetch_profile: profile, selector_or_key: 'FAQPage.mainEntity[].name', observed_value: q.name })) });
-        const behindExpander = qs.filter((q) => q.name && onPage(q) && !visibleWithoutInteraction.includes(collapse(q.name).toLowerCase().slice(0, 60)));
-        if (behindExpander.length) b.note('FAQ_NOT_MARKED_UP', `${behindExpander.length} marked-up FAQ answer(s) sit behind an expand/collapse control. That is permitted — the content is on the page and a reader can reveal it — and is recorded as context, not as a mismatch.`);
+        // Whether an answer sits behind an expand/collapse control is a question about layout, and
+        // only innerText answers it. Without a browser the two texts are the same string, so every
+        // answer would test as "not behind an expander" - an assertion we have no basis for.
+        if (renderedDomObservable(page)) {
+          const behindExpander = qs.filter((q) => q.name && onPage(q) && !visibleWithoutInteraction.includes(collapse(q.name).toLowerCase().slice(0, 60)));
+          if (behindExpander.length) b.note('FAQ_NOT_MARKED_UP', `${behindExpander.length} marked-up FAQ answer(s) sit behind an expand/collapse control. That is permitted — the content is on the page and a reader can reveal it — and is recorded as context, not as a mismatch.`);
+        } else if (qs.some((q) => q.name && onPage(q))) {
+          b.note('EXPANDER_STATE_UNOBSERVABLE', 'Whether these FAQ answers are visible immediately or sit behind an expand/collapse control could not be determined: this run had no browser, and that distinction depends on how the page lays out rather than on its markup. Both are permitted, so nothing is reported either way.');
+        }
       }
       // Speakable (R-3.1-18)
       const speak = node.speakable;

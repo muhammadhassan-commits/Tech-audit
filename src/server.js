@@ -64,14 +64,21 @@ export function createServer() {
       // body and can see at a glance whether rendering is really available here.
       if (url.pathname === '/health') {
         const browser = findBrowser() || null;
+        // Rendering no longer means "a browser is installed". The transport renders too, so the
+        // honest answer is whether either route is open and which one a run would take.
+        const transport = Boolean(process.env.DATAFORSEO_PASSWORD
+          && (process.env.DATAFORSEO_LOGIN || process.env.DATAFORSEO_EMAIL));
         return send(res, 200, {
           ok: true,
           tool_version: TOOL_VERSION,
           browser_path: browser,
-          render_available: Boolean(browser),
+          fetch_transport: transport ? 'dataforseo' : 'direct',
+          render_via: transport ? 'dataforseo' : browser ? 'chromium' : null,
+          render_available: Boolean(browser) || transport,
           keys: {
             google: Boolean(process.env.GOOGLE_API_KEY),
             anthropic: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
+            dataforseo: transport,
           },
           saved_reports: fs.existsSync(RUNS_DIR) ? fs.readdirSync(RUNS_DIR).filter((f) => f.endsWith('.json')).length : 0,
           active_runs: [...runs.values()].filter((r) => r.status === 'running').length,

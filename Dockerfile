@@ -1,23 +1,19 @@
-# The engine needs three things a static host cannot give it: a process that lives for the length
-# of an audit (measured 425-575s), a real Chromium for the RENDERED fetch profile, and a held-open
-# connection for live progress. This image provides all three.
+# The engine needs two things a static host cannot give it: a process that lives for the length of
+# an audit (measured 425-575s) and a held-open connection for live progress. It no longer needs a
+# browser, which is what lets it run where one cannot be installed.
 FROM node:20-slim
 
-# Chromium for the RENDERED profile (R-FETCH-2). Without it every JavaScript-injected value is
-# invisible to the audit, and on a client-rendered site that is most of the page.
-# The fonts are not decoration: without them the renderer measures layout against fallback metrics.
+# No browser. The RENDERED profile comes from the fetch transport, which returns the DOM after
+# scripts have run - verified against a client-rendered page, where the same URL answered with 645
+# bytes without JavaScript and 3157 bytes with it.
+#
+# Chromium is still supported and still preferred when present: set AUDIT_CHROME_PATH and the
+# engine uses it, which keeps innerText and the client-side navigation chain. This image simply does
+# not ship one, which removes ~400 MB and the build's most fragile step.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      chromium \
-      fonts-liberation fonts-noto-color-emoji \
       ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# src/net/render.js probes a list of known paths; this is the one it looks for first.
-ENV AUDIT_CHROME_PATH=/usr/bin/chromium
-# Chromium will not start as root without --no-sandbox, and Docker's default 64 MB /dev/shm makes
-# it crash on real pages. These are container facts, not preferences, so they are set here rather
-# than in the code, which keeps the browser's own sandbox on a normal local run.
-ENV AUDIT_CHROME_ARGS=--no-sandbox,--disable-dev-shm-usage
 ENV NODE_ENV=production
 
 WORKDIR /app
@@ -35,7 +31,10 @@ COPY . .
 # Checking the file exists is not enough: a present binary that cannot start is the same outcome
 # as a missing one, and both are invisible until a report comes back short. So the build launches
 # the browser through the engine's own code path, with the same flags production will use.
-RUN node scripts/check-render.mjs
+# The render check launched a browser and failed the build if it would not start. There is no
+# browser here by design, so that step would now fail every build. Whether the transport can render
+# is a question about credentials and a live API, which a build cannot answer; /health reports it at
+# runtime instead, where it is actually knowable.
 
 # Reports are written here. Mount a persistent disk at this path to keep them across restarts;
 # without one they live only as long as the container, which is fine if you publish to the viewer.

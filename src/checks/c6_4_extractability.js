@@ -2,7 +2,7 @@
 // Simulates what retrieval does to content: can an answer be lifted out and still be true and
 // attributable? F-6.4-1: no claim is ever made about whether an AI system will cite the page.
 import { ev } from '../engine/result.js';
-import { forEachPage, domEv } from './_util.js';
+import { forEachPage, domEv, renderedDomObservable} from './_util.js';
 import { collapse, wordCount, sentences, isMostlyNonLatin } from '../parse/text.js';
 import { selfContained } from './c6_3_structure.js';
 import { MODELLED_CAVEAT, NON_DETERMINISTIC_CAVEAT } from '../llm/judge.js';
@@ -73,6 +73,10 @@ export async function run(ctx) {
 
     // R-6.4-6 attribution scaffolding
     const visibleText = page.rendered?.dom?.visibleText || f.bodyText;
+    // Without a browser this is textContent, not innerText: it includes text a reader cannot see.
+    if (!renderedDomObservable(page)) {
+      b.note('VISIBLE_TEXT_APPROXIMATED', 'Author and date presence were read from the page’s text content rather than from what a browser renders, because this run had no browser. Text hidden by CSS counts as present here, so a byline or date in collapsed or off-screen markup may be credited as visible.');
+    }
     const hasAuthor = /\b(by|written by|author)\s*:?\s+[A-Z][\p{L}'-]+/u.test(visibleText) || !!f.og['article:author'];
     const hasDate = f.timeEls.length > 0 || /\b(19|20)\d{2}[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+(19|20)\d{2}\b/i.test(visibleText);
     const outboundCitations = f.links.filter((l) => !l.discard && !l.same_site && l.in_main).length;
