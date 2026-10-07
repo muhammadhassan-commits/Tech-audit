@@ -146,6 +146,11 @@ export const DEFAULTS = {
   keys: {
     google_api_key: process.env.GOOGLE_API_KEY || process.env.PSI_API_KEY || process.env.CRUX_API_KEY || '',
     cloro_api_key: process.env.CLORO_API_KEY || '',
+    // DataForSEO is used as a fetch transport, not as a data source: it crawls from its own proxy
+    // pool, which is the point - an identified bot on a datacentre IP gets challenged. Basic auth,
+    // login and password, exactly as DataForSEO issues them.
+    dataforseo_login: process.env.DATAFORSEO_LOGIN || '',
+    dataforseo_password: process.env.DATAFORSEO_PASSWORD || '',
   },
   // The fixed schema registry is loaded from config/schema.fixed_set.json (C-3.1 §3.1.0).
 };
