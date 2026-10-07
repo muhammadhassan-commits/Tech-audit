@@ -5,6 +5,8 @@ import crypto from 'node:crypto';
 import { loadConfig, TOOL_VERSION, RUBRIC_VERSION, THRESHOLD_SET_VERSION } from '../config.js';
 import { HttpClient, bodyText } from '../net/http.js';
 import { Renderer } from '../net/render.js';
+import { DataForSeoClient } from '../net/dataforseo.js';
+import { DataForSeoRenderer } from '../net/dfs_render.js';
 import { getRegister } from '../sources/register.js';
 import { parseSeed, normalizeUrl, originOf, pathOf } from '../parse/url.js';
 import { evaluate as robotsEvaluate } from '../parse/robots.js';
@@ -99,7 +101,17 @@ export async function runAudit(seed, options = {}, onEvent = () => {}) {
       if (!ctx.abortCode) ctx.abortCode = code;
     },
   });
-  ctx.renderer = new Renderer(cfg);
+  // A configured transport replaces both profiles: it fetches RAW, and with JavaScript enabled it
+  // returns a post-render DOM, which is what the RENDERED profile is for. Chromium is then not
+  // required at all, which is the point - the tool has to run where there is no browser.
+  const transport = new DataForSeoClient(cfg);
+  if (transport.available) {
+    ctx.http.transport = transport;
+    ctx.renderer = new DataForSeoRenderer(cfg, transport);
+    ctx.flags.add('FETCH_VIA_PROXY_TRANSPORT');
+  } else {
+    ctx.renderer = new Renderer(cfg);
+  }
   ctx.llm = new LlmJudge(cfg, ctx);
   ctx.robotsAllowed = (agent, url) => robotsVerdict(ctx, agent, url);
 

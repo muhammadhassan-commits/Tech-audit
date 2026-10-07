@@ -12,6 +12,7 @@ import https from 'node:https';
 import dns from 'node:dns';
 import zlib from 'node:zlib';
 import { normalizeUrl, hostOf } from '../parse/url.js';
+const dnsLookup = dns.promises.lookup;
 import { classifyResponse, VALIDITY } from './validity.js';
 
 const STAGES = ['dns', 'connect', 'tls', 'first_byte', 'body'];
@@ -24,6 +25,32 @@ const TLS_ERROR_CODES = new Set([
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const jitter = (ms) => Math.round(ms * (0.75 + Math.random() * 0.5));
+
+/**
+ * Can a third party on the public internet reach this address?
+ *
+ * A proxy pool resolves names on its own network. `localhost` there is its own loopback, and
+ * 10.0.0.5 is whatever sits at that address in its datacentre - so routing a private address
+ * through it either fails or reaches a stranger's machine. Either way it is not the host we meant.
+ */
+export function isPubliclyReachable(url) {
+  let host;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.test')
+    || host.endsWith('.local') || host.endsWith('.internal') || !host.includes('.')) return false;
+  if (host === '[::1]' || host === '::1') return false;
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (a === 10 || a === 127 || a === 0 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31)
+      || (a === 169 && b === 254) || a >= 224) return false;
+  }
+  return true;
+}
 
 export class HttpClient {
   constructor(cfg, hooks = {}) {
@@ -284,9 +311,73 @@ export class HttpClient {
     const norm = normalizeUrl(url) || url;
     const key = `${profile}|${opts.headers?.accept || ''}|${opts.discardBody ? 'D' : ''}|${norm}`;
     if (!opts.noCache && this.cache.has(key)) return this.cache.get(key);
-    const p = this._fetch(norm, opts);
+    // When a transport is configured, every fetch goes through it. The alternative - direct first,
+    // transport on refusal - would mean a report whose pages were fetched two different ways, and
+    // the one fetch most likely to be refused is the one we would try first anyway.
+    //
+    // Except for addresses no third party can reach. A proxy pool resolves names from its own
+    // network, so localhost, a private range or a .test name is either unreachable or, worse,
+    // somebody else's machine. Those are fetched directly, which is also what makes a local
+    // fixture testable.
+    const p = this.transport?.available && isPubliclyReachable(norm)
+      ? this._viaTransport(norm, opts)
+      : this._fetch(norm, opts);
     if (!opts.noCache) this.cache.set(key, p);
     return p;
+  }
+
+  /**
+   * One fetch through the configured transport, logged and counted exactly as a direct fetch is so
+   * that budgets, the HTTP log and the robots check behave identically.
+   *
+   * The robots hook still applies: a transport that can reach a page we are disallowed from is not
+   * permission to fetch it. Being able to is not the same as being allowed to.
+   */
+  async _viaTransport(url, opts) {
+    if (this.hooks.isBlockedForAuditor?.(url)) {
+      const rec = {
+        requested_url: url, final_url: url, chain: [], status: null, headers: null,
+        body: Buffer.alloc(0), bytes: 0, truncated: false, elapsed_ms: 0, stall_stage: null,
+        budget_class: opts.budgetClass || 'secondary', attempts: [], error: null,
+        not_responding: false, last_status_received: null, terminal: 'BLOCKED_BY_ROBOTS_FOR_AUDITOR',
+        retry_after_honoured: false, tls: null, transport: 'dataforseo',
+        observed_at: new Date().toISOString(),
+      };
+      this.log.push({ url, status: null, terminal: rec.terminal, transport: 'dataforseo' });
+      return rec;
+    }
+    // Resolve the name ourselves first. A transport reports a domain that does not exist as a
+    // generic failure, which would turn "you have mistyped your domain" - the single most useful
+    // thing to tell someone at this point - into "the origin was unreachable". DNS is not an HTTP
+    // request: nothing blocks it, it costs nothing, and it keeps the diagnosis exact.
+    try {
+      await dnsLookup(new URL(url).hostname);
+    } catch (e) {
+      if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN') {
+        const rec = {
+          requested_url: url, final_url: url, chain: [], status: null, headers: null,
+          body: Buffer.alloc(0), bytes: 0, truncated: false, elapsed_ms: 0, stall_stage: 'dns',
+          budget_class: opts.budgetClass || 'secondary', attempts: [], not_responding: true,
+          last_status_received: null, terminal: 'DNS_FAILURE', retry_after_honoured: false,
+          tls: null, transport: 'dataforseo',
+          // intake reads error.kind; the direct path sets it the same way.
+          error: { code: e.code, message: e.message, kind: 'dns_nxdomain' },
+          observed_at: new Date().toISOString(),
+        };
+        this.log.push({ url, status: null, terminal: rec.terminal, transport: 'dataforseo' });
+        return rec;
+      }
+    }
+
+    const rec = await this.transport.fetch(url, {
+      js: !!opts.js,
+      timeoutMs: opts.budgetClass === 'primary' ? this.net.url_budget_ms * 2 : this.net.secondary_budget_ms * 2,
+    });
+    rec.budget_class = opts.budgetClass || 'secondary';
+    this.fetchCount++;
+    if (opts.budgetClass === 'primary') this.pageFetches++;
+    this.log.push({ url, status: rec.status, terminal: rec.terminal, elapsed_ms: rec.elapsed_ms, transport: 'dataforseo' });
+    return rec;
   }
 
   async _fetch(url, opts) {
