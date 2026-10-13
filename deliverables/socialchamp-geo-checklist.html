@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEO Audit Checklist</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #15181d; --muted: #5c6470; --line: #e3e6ea; --card: #f7f8fa;
+    --fail: #c0362c; --warn: #9a6400; --crit: #8b1a10; --high: #c0362c; --med: #9a6400; --low: #5c6470;
+    --accent: #1d4ed8;
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171c; --fg: #e8eaed; --muted: #9aa3ae; --line: #2a2f37; --card: #1b1f25;
+      --fail: #f05a4c; --warn: #e0a106; --crit: #ff6b5b; --high: #f05a4c; --med: #e0a106; --low: #9aa3ae;
+      --accent: #7aa2ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171c; --fg: #e8eaed; --muted: #9aa3ae; --line: #2a2f37; --card: #1b1f25;
+    --fail: #f05a4c; --warn: #e0a106; --crit: #ff6b5b; --high: #f05a4c; --med: #e0a106; --low: #9aa3ae;
+    --accent: #7aa2ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 72px; }
+  header { border-bottom: 2px solid var(--fg); padding-bottom: 18px; margin-bottom: 26px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13.5px; }
+  .scoreline { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin-top: 16px; }
+  .big { font-size: 42px; font-weight: 700; line-height: 1; }
+  .verdict { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--warn); font-weight: 700; }
+  .secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 22px 0 0; }
+  .sec { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .sec .n { font-size: 12px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .sec .v { font-size: 20px; font-weight: 700; }
+  h2 { font-size: 15px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 34px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  .item { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start;
+          padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .tick { position: absolute; opacity: 0; pointer-events: none; }
+  .box { width: 19px; height: 19px; margin-top: 3px; border: 2px solid var(--muted); border-radius: 4px;
+         cursor: pointer; display: block; }
+  .tick:checked + .box { background: var(--accent); border-color: var(--accent); }
+  .tick:checked + .box::after { content: "✓"; color: #fff; font-size: 13px; line-height: 15px; display: block; text-align: center; }
+  .tick:checked ~ .body { opacity: .45; text-decoration-color: var(--muted); }
+  .tick:checked ~ .body .what { text-decoration: line-through; }
+  .head { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-bottom: 5px; }
+  .pill { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px;
+          border: 1px solid currentColor; }
+  .pill.fail { color: var(--fail); } .pill.warn { color: var(--warn); }
+  .pill.sev.crit { color: var(--crit); } .pill.sev.high { color: var(--high); }
+  .pill.sev.med { color: var(--med); } .pill.sev.low { color: var(--low); }
+  .chk { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .count { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .what { margin: 0 0 6px; }
+  .fix { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .fix strong { color: var(--fg); }
+  .urls { margin-top: 7px; font-size: 13px; }
+  .urls summary { cursor: pointer; color: var(--accent); }
+  .urls ul { margin: 6px 0 0 16px; padding: 0; }
+  .urls a { color: var(--accent); text-decoration: none; word-break: break-all; }
+  .note { background: var(--card); border-left: 3px solid var(--muted); padding: 11px 14px;
+          margin: 10px 0; font-size: 13.5px; color: var(--muted); border-radius: 0 6px 6px 0; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+           font-size: 12.5px; color: var(--muted); }
+  @media print {
+    body { background: #fff; color: #000; font-size: 10.5pt; }
+    .wrap { max-width: none; padding: 0; }
+    .box { border-color: #666; }
+    .urls { display: block !important; }
+    .urls summary { display: none; }
+    .item { break-inside: avoid; page-break-inside: avoid; }
+    .pill { border-color: #666; color: #000 !important; }
+    a { color: #000; }
+    h2 { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>GEO Audit Checklist</h1>
+    <div class="sub">https://www.socialchamp.com · 10 representative pages · 2026-10-13</div>
+    <div class="scoreline">
+      <span class="big">64%</span>
+      <span class="verdict">NEEDS WORK</span>
+      <span class="sub">108 pass · 41 warn · 19 fail</span>
+    </div>
+    <div class="secs">
+      <div class="sec"><span class="n">1. Crawl &amp; Indexing</span><span class="v">100%</span></div><div class="sec"><span class="n">2. On-Page SEO</span><span class="v">85%</span></div><div class="sec"><span class="n">3. Structured &amp; International</span><span class="v">0%</span></div><div class="sec"><span class="n">4. Performance</span><span class="v">40%</span></div><div class="sec"><span class="n">5. LLM / AI Access</span><span class="v">100%</span></div><div class="sec"><span class="n">6. LLM Content Readiness</span><span class="v">51%</span></div>
+    </div>
+  </header>
+
+  <h2>Fix first — 5 failing</h2>
+  <ul class="list">
+<li class="item fail">
+  <input type="checkbox" id="c0" class="tick">
+  <label for="c0" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill fail">FAIL</span>
+      <span class="pill sev high">HIGH</span>
+      <span class="chk">C-3.1 · Structured Data</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">Organization @id is not byte-identical site-wide (3 variants), fragmenting the entity.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li></ul></details>
+  </div>
+</li>
+<li class="item fail">
+  <input type="checkbox" id="c1" class="tick">
+  <label for="c1" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill fail">FAIL</span>
+      <span class="pill sev high">HIGH</span>
+      <span class="chk">C-3.1 · Structured Data</span>
+      <span class="count">9 pages</span>
+    </div>
+    <p class="what">Organization (S1) is missing tool-required field(s): url. Google documents no strictly required properties for Organization; the name/url/logo requirement is this tool's standard for entity resolution, not a Google requirement.</p>
+    <p class="fix"><strong>Fix:</strong> Add the missing field(s) url to the existing Organization node (modify the existing graph; do not add a second block — F-3.1-6).</p>
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></li><li><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></li><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li><li><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></li><li><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></li><li><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></li><li><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></li></ul></details>
+  </div>
+</li>
+<li class="item fail">
+  <input type="checkbox" id="c2" class="tick">
+  <label for="c2" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill fail">FAIL</span>
+      <span class="pill sev high">HIGH</span>
+      <span class="chk">C-6.1 · Raw Content Availability</span>
+      <span class="count">4 pages</span>
+    </div>
+    <p class="what">The three extractors agree only 0.41: the page's content boundaries are ambiguous to any extractor, which is exactly the condition that degrades retrieval.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></li><li><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></li><li><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></li><li><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></li></ul></details>
+  </div>
+</li>
+<li class="item fail">
+  <input type="checkbox" id="c3" class="tick">
+  <label for="c3" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill fail">FAIL</span>
+      <span class="pill sev high">HIGH</span>
+      <span class="chk">C-6.2 · Entity Clarity</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">The entity name differs across sources — these are the strings an assistant reconciles when deciding what the site is: Organization.name &quot;Social Champ&quot; vs logo alt &quot;SOCIALCHAMP&quot;; WebSite.name &quot;Social Champ&quot; vs logo alt &quot;SOCIALCHAMP&quot;; og:site_name &quot;Social Champ&quot; vs logo alt &quot;SOCIALCHAMP&quot;; title brand suffix &quot;Social Champ&quot; vs logo alt &quot;SOCIALCHAMP&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com" target="_blank" rel="noopener">/</a></li></ul></details>
+  </div>
+</li>
+<li class="item fail">
+  <input type="checkbox" id="c4" class="tick">
+  <label for="c4" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill fail">FAIL</span>
+      <span class="pill sev low">LOW</span>
+      <span class="chk">C-6.5 · Content Freshness</span>
+      <span class="count">4 pages</span>
+    </div>
+    <p class="what">Unparseable date value(s): Last-Modified header=&quot;[object Object]&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></li><li><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></li><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li></ul></details>
+  </div>
+</li></ul>
+
+  <h2>Then — 14 warnings</h2>
+  <ul class="list">
+<li class="item warn">
+  <input type="checkbox" id="c1000" class="tick">
+  <label for="c1000" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev high">HIGH</span>
+      <span class="chk">C-6.3 · Content Structure</span>
+      <span class="count">2 pages</span>
+    </div>
+    <p class="what">Only 0% of chunks are viable (40–400 words with a self-contained opening sentence).</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1001" class="tick">
+  <label for="c1001" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-2.1 · Title Tags</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">Title looks keyword-stuffed: &quot;Social Media Management for Agencies | Simplified, Streamlined, &amp; Scalable&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1002" class="tick">
+  <label for="c1002" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-2.2 · Meta Descriptions</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">Description has a keyword-list shape.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1003" class="tick">
+  <label for="c1003" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-2.3 · H1 / Headings</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">RAW h1 &quot;Social media management for agencies Run every client from its own workspace&quot; differs from RENDERED h1 &quot;Post once. Show up everywhere&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1004" class="tick">
+  <label for="c1004" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-2.4 · Internal Links</span>
+      <span class="count">6 pages</span>
+    </div>
+    <p class="what">No other sampled page links to this page contextually. Sample-scoped only — the page may be well linked site-wide (E-2.4-3).</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></li><li><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></li><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li><li><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1005" class="tick">
+  <label for="c1005" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-4.1 · Core Web Vitals</span>
+      <span class="count">11 pages</span>
+    </div>
+    <p class="what">PHONE: LCP p75 2640 ms needs improvement; INP p75 329 ms needs improvement.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com" target="_blank" rel="noopener">/</a></li><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></li><li><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></li><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li><li><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></li><li><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></li><li><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></li><li><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1006" class="tick">
+  <label for="c1006" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-5.4 · AI Instructions Page</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">The page is thin for its purpose: completeness 0.30 (7/23). Missing: Definitional sentence (what the organisation is, in one sentence), What it does / core offerings, Who it is for, Category and named alternatives/competitors, Explicit instructions to AI assistants, Key facts block, When it is not the right fit.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com" target="_blank" rel="noopener">/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1007" class="tick">
+  <label for="c1007" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-6.1 · Raw Content Availability</span>
+      <span class="count">2 pages</span>
+    </div>
+    <p class="what">Extractor agreement is 0.65; content boundaries are unclear.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1008" class="tick">
+  <label for="c1008" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-6.3 · Content Structure</span>
+      <span class="count">3 pages</span>
+    </div>
+    <p class="what">1 section(s) run past 400 words of unbroken prose (longest 643): &quot;Questions agencies ask before switching&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1009" class="tick">
+  <label for="c1009" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-6.3 · Content Structure</span>
+      <span class="count">2 pages</span>
+    </div>
+    <p class="what">64% of chunks are viable; several open with an unresolved pronoun or bare demonstrative.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></li><li><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1010" class="tick">
+  <label for="c1010" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-6.4 · Answer Extractability</span>
+      <span class="count">7 pages</span>
+    </div>
+    <p class="what">3 question-form heading(s), none answered directly within three sentences: &quot;How a post gets approved&quot; → &quot;01Your team reviews firstApprovals can run in several stages, so your team reviews before &quot;; &quot;What your clients see, without the email threads&quot; → &quot;A workspace for every client Each client gets its own workspace with its own channels, cal&quot;; &quot;What agencies and marketers say&quot; → &quot;I cancelled my Hootsuite contract after 12 years and switched to Social Champ.&quot;.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li><li><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></li><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li><li><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></li><li><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></li><li><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></li><li><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1011" class="tick">
+  <label for="c1011" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev med">MEDIUM</span>
+      <span class="chk">C-6.4 · Answer Extractability</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">Modelled extractability score 0.42: A1 — Headings pose explicit how-to and comparison questions, but the text beneath each is a truncated teaser or narrative lead-in that never delivers the answer, with only one snippet gesturing at a response. A2 — Nearly every excerpt is cut off mid-sentence with an ellipsis, so a 2-3 sentence pull would be incomplete and often incomprehensible on its own. A3 — Claims are generic or truncated before any figure or verifiable detail lands, leaving only vague promotional assertions.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1012" class="tick">
+  <label for="c1012" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev low">LOW</span>
+      <span class="chk">C-2.3 · H1 / Headings</span>
+      <span class="count">1 page</span>
+    </div>
+    <p class="what">1 heading-level skip(s): h1 → h3 (&quot;Publishing&quot;).</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></li></ul></details>
+  </div>
+</li>
+<li class="item warn">
+  <input type="checkbox" id="c1013" class="tick">
+  <label for="c1013" class="box" aria-label="mark done"></label>
+  <div class="body">
+    <div class="head">
+      <span class="pill warn">WARN</span>
+      <span class="pill sev low">LOW</span>
+      <span class="chk">C-6.1 · Raw Content Availability</span>
+      <span class="count">2 pages</span>
+    </div>
+    <p class="what">Extracted main content is 3.24% of the HTML payload.</p>
+    
+    <details class="urls"><summary>Affected pages</summary><ul><li><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></li><li><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></li></ul></details>
+  </div>
+</li></ul>
+
+  <h2>Pages audited</h2>
+  <ul class="list"><li class="item"><span></span><div class="body"><span class="chk">homepage</span><p class="what"><a href="https://www.socialchamp.com/" target="_blank" rel="noopener">/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">blog_article</span><p class="what"><a href="https://www.socialchamp.com/blog/best-time-to-post-on-facebook/" target="_blank" rel="noopener">/blog/best-time-to-post-on-facebook/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">pricing</span><p class="what"><a href="https://www.socialchamp.com/agorapulse-alternatives/" target="_blank" rel="noopener">/agorapulse-alternatives/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">blog_template_alt</span><p class="what"><a href="https://www.socialchamp.com/free-social-media-tools/free-ai-tweet-generator/" target="_blank" rel="noopener">/free-social-media-tools/free-ai-tweet-generator/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">category</span><p class="what"><a href="https://www.socialchamp.com/blog/" target="_blank" rel="noopener">/blog/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">service_main</span><p class="what"><a href="https://www.socialchamp.com/features/" target="_blank" rel="noopener">/features/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">service_secondary</span><p class="what"><a href="https://www.socialchamp.com/features/bulk-upload/" target="_blank" rel="noopener">/features/bulk-upload/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">other</span><p class="what"><a href="https://www.socialchamp.com/industry/education/" target="_blank" rel="noopener">/industry/education/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">other</span><p class="what"><a href="https://www.socialchamp.com/solution/agencies/" target="_blank" rel="noopener">/solution/agencies/</a></p></div></li><li class="item"><span></span><div class="body"><span class="chk">other</span><p class="what"><a href="https://www.socialchamp.com/integrations/canva/" target="_blank" rel="noopener">/integrations/canva/</a></p></div></li></ul>
+
+  <h2>What this audit does and does not show</h2>
+  <p class="note">Section 6 sub-scores are modelled estimates against a fixed rubric, not measurements of retrieval behaviour by any specific AI system.</p><p class="note">Core Web Vitals come from a third-party API whose freshness and coverage this tool does not control.</p><p class="note">1 check(s) were not testable and are excluded from every score; they are listed separately.</p><p class="note">Pages were fetched through a third-party proxy service rather than directly, so that an identified auditor on a datacentre address is not blocked. This reports what that service received: a site that refuses ordinary crawlers may still appear reachable here, and response headers — including X-Robots-Tag — were not returned by it.</p>
+
+  <footer>
+    Generated from a technical audit of 10 representative pages. Not a full-site crawl:
+    findings describe the pages listed above and patterns visible in them.
+  </footer>
+</div>
+</body>
+</html>

@@ -149,7 +149,12 @@ export class DataForSeoClient {
     if (item.cache_control?.cachable != null) headers['cache-control'] = item.cache_control.ttl != null ? `max-age=${item.cache_control.ttl}` : 'public';
     if (item.content_encoding) headers['content-encoding'] = item.content_encoding;
     if (item.server) headers.server = item.server;
-    if (item.last_modified) headers['last-modified'] = item.last_modified;
+    // last_modified is an object - { header, sitemap, meta_tag } - not a date string. Assigning it
+    // whole put "[object Object]" into the header, and C-6.5 then reported the site as publishing
+    // an unparseable Last-Modified on every page that had one. Only the header belongs here; the
+    // other two are different signals with their own checks.
+    if (typeof item.last_modified === 'string') headers['last-modified'] = item.last_modified;
+    else if (item.last_modified?.header) headers['last-modified'] = item.last_modified.header;
     record.headers = headers;
     record.dfs = {
       resource_type: item.resource_type,
