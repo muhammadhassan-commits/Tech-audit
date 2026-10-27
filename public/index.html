@@ -60,16 +60,6 @@
       <button id="btn-print" type="button" class="ghost">Print / save as PDF</button>
       <button id="btn-expand" type="button" class="ghost">Expand all</button>
     </div>
-    <!-- Filled only when there are Critical/High failures. A reader who opens the report and meets
-         a 136-row checklist does not know where to start; this says so in five lines. -->
-    <section id="start-here" class="panel start" hidden></section>
-
-    <div class="report-layout">
-      <nav id="toc" class="toc" aria-label="Contents">
-        <p class="toc-h">Contents</p>
-        <ul id="toc-list"></ul>
-      </nav>
-      <div class="report-content">
     <div class="grid-top">
       <article class="panel score-card">
         <h2>Overall audit score</h2>
@@ -109,21 +99,7 @@
       <details id="discovery-detail"><summary>Discovery &amp; grouping detail</summary><div id="discovery-body"></div></details>
     </article>
 
-    <!-- The filter narrows the checklist and the contents rail together; a rail that still lists
-         sections with nothing visible in them is worse than no rail. -->
-    <div class="filterbar" id="filterbar" role="group" aria-label="Filter checks">
-      <span class="filterbar-h">Show</span>
-      <button class="fchip" data-f="all" aria-pressed="true">All checks <b id="n-all">0</b></button>
-      <button class="fchip" data-f="issue" aria-pressed="false">Issues found <b id="n-issue">0</b></button>
-      <button class="fchip fchip-urgent" data-f="urgent" aria-pressed="false">Fix first <b id="n-urgent">0</b></button>
-      <button class="fchip" data-f="pass" aria-pressed="false">Passing <b id="n-pass">0</b></button>
-      <button class="fchip" data-f="need" aria-pressed="false">Needs data <b id="n-need">0</b></button>
-      <span class="filterbar-count" id="fcount"></span>
-    </div>
-
     <div id="checklist"></div>
-      </div>
-    </div>
   </section>
 </main>
 

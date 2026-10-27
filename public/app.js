@@ -461,9 +461,6 @@ function render(report) {
   renderSections(report);
   renderSample(report);
   renderChecklist(report);
-  renderStartHere(report);
-  renderToc();
-  applyFilter('all');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -703,10 +700,6 @@ function renderChecklist(report) {
   }
   for (const sec of report.scores.sections) {
     const cat = el('section', 'cat');
-    // The contents rail links here, and the filter hides the whole section when nothing in it
-    // survives, so both need a stable handle on it.
-    cat.id = `sec-${sec.section}`;
-    cat.dataset.title = `${sec.section}. ${sec.name}`;
     const header = el('header');
     header.appendChild(el('h3', null, `${sec.section}. ${sec.name}`));
     const score = el('span', 'cat-score', sec.score == null ? '—' : pct(sec.score));
@@ -740,20 +733,6 @@ function renderFactor(factor, results, report) {
   // was being marked on it.
   const status = factor.unspecified ? 'UNSPECIFIED' : factor.advisory ? 'ADVISORY' : worst || results[0]?.status || 'NOT_TESTABLE';
   const sev = results.find((r) => r.status === worst && r.severity)?.severity;
-
-  // What the filter reads. Five buckets, because that is what a reader actually wants to separate:
-  // things that are wrong, things that are fine, things we could not test, things that do not apply,
-  // and - kept distinct from "not tested" - things we could test if the client gave us access.
-  const worstSev = results.filter((r) => ['FAIL', 'WARN'].includes(r.status) && r.severity)
-    .map((r) => r.severity)
-    .sort((a, b) => ({ CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }[a] ?? 9) - ({ CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }[b] ?? 9))[0] || '';
-  wrap.dataset.v = ['FAIL', 'WARN', 'ERROR'].includes(status) ? 'issue'
-    : status === 'PASS' ? 'pass'
-      : status === 'NOT_APPLICABLE' ? 'na'
-        : results.some((r) => /NEEDS?_|NOT_CONFIGURED|no API key|not configured/i.test(`${r.reason_code} ${r.summary}`)) ? 'need'
-          : 'nt';
-  wrap.dataset.s = worstSev.toLowerCase();
-  wrap.dataset.cid = factor.id;
   header.appendChild(statusPill(status, sev));
   const scoreVal = chk.length ? chk.reduce((a, c) => a + (c.score ?? 0), 0) / chk.filter((c) => c.score != null).length : null;
   header.appendChild(el('span', 'factor-score', factor.unspecified || factor.advisory || !chk.length || Number.isNaN(scoreVal) ? '—' : pct(scoreVal)));
@@ -785,187 +764,6 @@ function renderFactor(factor, results, report) {
   });
   return wrap;
 }
-
-// ── Start here ───────────────────────────────────────────────────────────
-// A reader who opens a 136-row checklist does not know where to begin, and the ordering that
-// matters to them is not the section order the checks are organised in. This lifts the Critical and
-// High failures out, in severity order, and says plainly that everything else can wait.
-function renderStartHere(report) {
-  const host = $('#start-here');
-  host.innerHTML = '';
-  const SEV = { CRITICAL: 0, HIGH: 1 };
-  // One problem per entry, with the pages it affects gathered onto it. The same finding on ten
-  // pages is one thing to fix, and listing it ten times both overstates the work and buries
-  // whatever else is urgent underneath it.
-  const groups = new Map();
-  for (const r of report.results) {
-    // Same set the "Fix first" filter shows, so the two cannot disagree. A HIGH warning is still
-    // high; what separates these from the rest is the severity, not the pass/fail wording.
-    if (!['FAIL', 'ERROR', 'WARN'].includes(r.status) || SEV[r.severity] == null) continue;
-    const key = `${r.check_id}|${r.reason_code}`;
-    if (!groups.has(key)) groups.set(key, { ...r, urls: [] });
-    if (r.target_url && !groups.get(key).urls.includes(r.target_url)) groups.get(key).urls.push(r.target_url);
-  }
-  const top = [...groups.values()].sort((a, b) => SEV[a.severity] - SEV[b.severity]);
-
-  const totalIssues = report.results.filter((r) => ['FAIL', 'WARN', 'ERROR'].includes(r.status)).length;
-  const passing = report.results.filter((r) => r.status === 'PASS').length;
-
-  if (!top.length) {
-    // Saying "nothing urgent" is itself worth saying, and is not the same as having no findings.
-    host.hidden = false;
-    host.appendChild(el('p', 'eyebrow', 'Start here'));
-    host.appendChild(el('h2', null, 'Nothing here is urgent'));
-    host.appendChild(el('p', 'start-lead', `${passing} checks pass and no finding is Critical or High. The ${totalIssues} issues below are Medium and Low: real, but none of them needs attention before the others. Work down the list in the order shown.`));
-    return;
-  }
-
-  host.hidden = false;
-  host.appendChild(el('p', 'eyebrow', 'Start here'));
-  const n = top.length;
-  host.appendChild(el('h2', null, `${n === 1 ? 'One thing' : `${n} things`} to fix first`));
-  host.appendChild(el('p', 'start-lead',
-    `${passing} checks pass. The ${n === 1 ? 'item' : 'items'} below ${n === 1 ? 'is the only' : `are the only ${n}`} Critical or High finding${n === 1 ? '' : 's'} out of ${totalIssues} issues — everything else can wait until ${n === 1 ? 'it is' : 'these are'} done.`));
-
-  const ol = el('ol', 'start-list');
-  for (const r of top) {
-    const li = el('li');
-    const head = el('div', 'fhead');
-    head.appendChild(el('span', `pill s-${String(r.severity).toLowerCase()}`, r.severity));
-    head.appendChild(el('b', null, (plainText(r.summary).sentence || '').split(/(?<=[.;])\s/)[0] || r.check_name));
-    head.appendChild(el('span', 'fwho', r.check_name));
-    li.appendChild(head);
-
-    if (r.urls.length) {
-      const where = el('p', 'fwhere');
-      // Three is enough to recognise the pattern; the rest are in the check itself.
-      for (const u of r.urls.slice(0, 3)) {
-        const a = el('a', null, u.replace(/^https?:\/\/[^/]+/, '') || '/');
-        a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        where.appendChild(a);
-        where.appendChild(document.createTextNode(' '));
-      }
-      if (r.urls.length > 3) where.appendChild(el('span', 'fmore', `and ${r.urls.length - 3} more`));
-      li.appendChild(where);
-    }
-    const why = plainText(r.remediation?.action || r.summary).sentence;
-    if (why) li.appendChild(el('p', 'fwhy', why));
-
-    // Jumps to the check and opens it, rather than leaving the reader to find it.
-    const open = el('a', 'fopen', `Open the full check (${r.check_id}) →`);
-    open.href = `#sec-${r.section}`;
-    open.addEventListener('click', () => {
-      pressFilter('all');
-      const f = document.querySelector(`.factor[data-cid="${CSS.escape(r.check_id)}"]`);
-      if (!f) return;
-      f.closest('.cat-body').hidden = false;
-      f.querySelector('.factor-body').hidden = false;
-      setTimeout(() => f.scrollIntoView({ block: 'center', behavior: 'smooth' }), 0);
-    });
-    li.appendChild(open);
-    ol.appendChild(li);
-  }
-  host.appendChild(ol);
-
-  const rest = totalIssues - n;
-  if (rest > 0) {
-    const p = el('p', 'start-rest');
-    p.appendChild(document.createTextNode(`The remaining ${rest} issues are Medium and Low. They are real, but none needs attention before the ${n === 1 ? 'one' : n} above. `));
-    const link = el('a', 'rl', 'Show issues only');
-    link.href = '#checklist';
-    link.addEventListener('click', () => pressFilter('issue'));
-    p.appendChild(link);
-    host.appendChild(p);
-  }
-}
-
-// ── Contents rail ────────────────────────────────────────────────────────
-function renderToc() {
-  const list = $('#toc-list');
-  list.innerHTML = '';
-  const entries = [];
-  if (!$('#start-here').hidden) entries.push({ id: 'start-here', label: 'Start here', n: null });
-  entries.push({ id: 'sample-panel', label: 'Pages analysed', n: null });
-  for (const cat of document.querySelectorAll('.cat')) {
-    entries.push({
-      id: cat.id,
-      label: cat.dataset.title,
-      n: cat.querySelectorAll('.factor[data-v="issue"]').length,
-    });
-  }
-  for (const e of entries) {
-    const li = el('li');
-    const a = el('a', null, e.label);
-    a.href = `#${e.id}`;
-    a.dataset.t = e.id;
-    if (e.n) a.appendChild(el('b', 'toc-n', String(e.n)));
-    li.appendChild(a);
-    list.appendChild(li);
-  }
-  syncToc();
-}
-
-/** Highlight the section in view, and drop rail entries whose section the filter has hidden. */
-function syncToc() {
-  const line = window.innerHeight * 0.3;
-  let current = null;
-  for (const sec of document.querySelectorAll('#start-here, #sample-panel, .cat')) {
-    if (sec.hidden || sec.classList.contains('hide')) continue;
-    if (sec.getBoundingClientRect().top <= line) current = sec;
-  }
-  for (const a of document.querySelectorAll('#toc-list a')) {
-    const sec = document.getElementById(a.dataset.t);
-    const gone = !sec || sec.hidden || sec.classList.contains('hide');
-    a.parentElement.classList.toggle('hide', gone);
-    a.classList.toggle('active', sec === current);
-  }
-}
-
-// ── Filter ───────────────────────────────────────────────────────────────
-function matchesFilter(f, node) {
-  const v = node.dataset.v, s = node.dataset.s;
-  return f === 'all'
-    || (f === 'urgent' ? v === 'issue' && (s === 'critical' || s === 'high') : v === f);
-}
-
-function applyFilter(f) {
-  let shown = 0;
-  for (const node of document.querySelectorAll('.factor')) {
-    const ok = matchesFilter(f, node);
-    node.classList.toggle('hide', !ok);
-    if (ok) shown++;
-  }
-  // A section with nothing left steps aside rather than showing an empty body, and is opened when
-  // filtered so the reader sees the matches instead of a row of collapsed headers.
-  for (const cat of document.querySelectorAll('.cat')) {
-    const left = cat.querySelectorAll('.factor:not(.hide)').length;
-    cat.classList.toggle('hide', left === 0);
-    if (f !== 'all') cat.querySelector('.cat-body').hidden = false;
-  }
-  const count = $('#fcount');
-  if (count) count.textContent = f === 'all' ? '' : `${shown} of ${document.querySelectorAll('.factor').length} shown`;
-  for (const chip of document.querySelectorAll('.fchip')) {
-    chip.setAttribute('aria-pressed', String(chip.dataset.f === f));
-  }
-  // Counts on the chips themselves, so the reader can see there is nothing to look at before
-  // clicking a filter that would empty the page.
-  const tally = (k) => [...document.querySelectorAll('.factor')].filter((n) => matchesFilter(k, n)).length;
-  for (const k of ['all', 'issue', 'urgent', 'pass', 'need']) {
-    const b = document.getElementById(`n-${k}`);
-    if (b) b.textContent = String(tally(k));
-  }
-  syncToc();
-}
-
-function pressFilter(f) {
-  applyFilter(f);
-}
-
-document.addEventListener('click', (e) => {
-  const chip = e.target.closest('.fchip');
-  if (chip) applyFilter(chip.dataset.f);
-});
-window.addEventListener('scroll', () => requestAnimationFrame(syncToc), { passive: true });
 
 function renderResult(r) {
   const card = el('article', `result ${r.status}`);
