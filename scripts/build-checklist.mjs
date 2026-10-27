@@ -69,21 +69,12 @@ const meta = {
 const SEV_CLASS = { CRITICAL: 'crit', HIGH: 'high', MEDIUM: 'med', LOW: 'low' };
 const shortUrl = (u) => u.replace(/^https?:\/\/(www\.)?[^/]+/, '') || '/';
 
-const rowHtml = (r, i) => `
-<li class="item ${r.status.toLowerCase()}">
-  <input type="checkbox" id="c${i}" class="tick">
-  <label for="c${i}" class="box" aria-label="mark done"></label>
-  <div class="body">
-    <div class="head">
-      <span class="pill ${r.status.toLowerCase()}">${r.status}</span>
-      ${r.severity ? `<span class="pill sev ${SEV_CLASS[r.severity] || ''}">${r.severity}</span>` : ''}
-      <span class="chk">${esc(r.check_id)} · ${esc(r.check_name)}</span>
-      <span class="count">${r.urls.length} page${r.urls.length === 1 ? '' : 's'}</span>
-    </div>
-    <p class="what">${esc(r.summary)}</p>
-    ${r.action ? `<p class="fix"><strong>Fix:</strong> ${esc(r.action)}</p>` : ''}
-    ${r.urls.length ? `<details class="urls"><summary>Affected pages</summary><ul>${r.urls.map((u) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(shortUrl(u))}</a></li>`).join('')}</ul></details>` : ''}
-  </div>
+// Two fields: what the check is called, and what it found. Severity, affected URLs, remediation and
+// source references are all in the report - this is the readable summary, not the working document.
+const rowHtml = (r) => `
+<li class="item">
+  <span class="chk">${esc(r.check_name)}</span>
+  <p class="what">${esc(r.summary)}</p>
 </li>`;
 
 const html = `<!doctype html>
@@ -130,15 +121,9 @@ const html = `<!doctype html>
   h2 { font-size: 15px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
        margin: 34px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
   ul.list { list-style: none; margin: 0; padding: 0; }
-  .item { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start;
-          padding: 14px 0; border-bottom: 1px solid var(--line); }
-  .tick { position: absolute; opacity: 0; pointer-events: none; }
-  .box { width: 19px; height: 19px; margin-top: 3px; border: 2px solid var(--muted); border-radius: 4px;
-         cursor: pointer; display: block; }
-  .tick:checked + .box { background: var(--accent); border-color: var(--accent); }
-  .tick:checked + .box::after { content: "✓"; color: #fff; font-size: 13px; line-height: 15px; display: block; text-align: center; }
-  .tick:checked ~ .body { opacity: .45; text-decoration-color: var(--muted); }
-  .tick:checked ~ .body .what { text-decoration: line-through; }
+  /* No tick column. This is a list of findings to read and act on, not a form to fill in - whoever
+     works through it tracks progress wherever they already track work. */
+  .item { padding: 14px 0; border-bottom: 1px solid var(--line); }
   .head { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-bottom: 5px; }
   .pill { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px;
           border: 1px solid currentColor; }
@@ -190,10 +175,10 @@ const html = `<!doctype html>
   <ul class="list">${rows.filter((r) => r.status === 'FAIL').map(rowHtml).join('')}</ul>
 
   <h2>Then — ${rows.filter((r) => r.status === 'WARN').length} warnings</h2>
-  <ul class="list">${rows.filter((r) => r.status === 'WARN').map((r, i) => rowHtml(r, i + 1000)).join('')}</ul>
+  <ul class="list">${rows.filter((r) => r.status === 'WARN').map(rowHtml).join('')}</ul>
 
   <h2>Pages audited</h2>
-  <ul class="list">${meta.pageList.map((p) => `<li class="item"><span></span><div class="body"><span class="chk">${esc(p.type)}</span><p class="what"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(shortUrl(p.url))}</a></p></div></li>`).join('')}</ul>
+  <ul class="list">${meta.pageList.map((p) => `<li class="item"><div class="body"><span class="chk">${esc(p.type)}</span><p class="what"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(shortUrl(p.url))}</a></p></div></li>`).join('')}</ul>
 
   <h2>What this audit does and does not show</h2>
   ${meta.caveats.map((c) => `<p class="note">${esc(c)}</p>`).join('')}
@@ -226,9 +211,8 @@ const sheetRow = (n, cells) => {
   }).join('') + '</row>';
 };
 
-const HEAD = ['Done', 'Priority', 'Severity', 'Check', 'Check name', 'Issue', 'What to do', 'Pages affected', 'URLs', 'Reference'];
-const dataRows = rows.map((r) => ['', r.status, r.severity, r.check_id, r.check_name, r.summary,
-  r.action, r.urls.length, r.urls.map(shortUrl).join('\n'), r.sources[0] || '']);
+const HEAD = ['Check name', 'Description'];
+const dataRows = rows.map((r) => [r.check_name, r.summary]);
 
 const summaryRows = [
   ['GEO Audit', meta.target],
@@ -258,7 +242,7 @@ const sheet = (rowsXml, cols) => `<?xml version="1.0" encoding="UTF-8" standalon
 
 const checklistXml = sheet(
   [sheetRow(1, HEAD), ...dataRows.map((d, i) => sheetRow(i + 2, d))].join(''),
-  [6, 10, 11, 9, 24, 70, 70, 14, 46, 40],
+  [34, 120],
 );
 const summaryXml = sheet(summaryRows.map((d, i) => sheetRow(i + 1, d)).join(''), [34, 80]);
 
